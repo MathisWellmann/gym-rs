@@ -1,0 +1,16 @@
+[package]
+name = "gym-rs"
+version = "0.1.0"
+authors = ["MathisWellmann <wellmannmathis@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "^0.7.3"
+rand_pcg = "0.2.1"
+log = "0.4.11"
+
+sdl2 = { version = "0.32.2", features = ["gfx", "ttf"], optional = true}
+random_color = { version = "0.4.4", optional = true }
+
