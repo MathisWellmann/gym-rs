@@ -1,6 +1,6 @@
 # OpenAI Gym written in pure Rust for blazingly fast performance :rocket:
 
-:warning: :construction:
+:warning: :construction: Work in Progress :construction:
 
 This library aims be be as close to the original OpenAI Gym library which is written in Python
 and translate it into Rust for blazingly fast performance.
@@ -60,6 +60,7 @@ Any Help is highly appreciated and benefits the Rust and ML/AI community greatly
 - compare performance to gym-rs python wrapper
 - make generic implementation and compare f32 vs f64 performance.
 - publish on crates.io
+- make piston_window dependency optional by introducing a render feature if possible
 
 ## License
 gym-rs is licensed UNDER MIT License just like OpenAI's Gym specifies.

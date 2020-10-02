@@ -1,7 +1,14 @@
-use crate::{GymEnv, ActionType};
+extern crate find_folder;
+
+use crate::{GymEnv, ActionType, Viewer, scale};
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 use rand::distributions::Uniform;
+use std::thread;
+use piston_window::*;
+use piston_window::glyph_cache::rusttype::GlyphCache;
+use std::time::Duration;
+use std::path::Path;
 
 /*
 Description:
@@ -66,6 +73,7 @@ pub struct CartPoleEnv {
     rng: Pcg64,
     state: [f64; 4],
     steps_beyond_done: Option<usize>,
+    score: f64,  // cumulative reward used to rendering to window
 }
 
 #[derive(Debug)]
@@ -89,11 +97,13 @@ impl Default for CartPoleEnv {
             force_mag: 10.0,
             tau: 0.02,
             kinematics_integrator: KinematicsIntegrator::Euler,
-            theta_threshold_radians: 12.0 * 2.0 * std::f64::consts::PI / 360.0,
+            // TODO: change to 12 *
+            theta_threshold_radians: 45.0 * 2.0 * std::f64::consts::PI / 360.0,
             x_threshold: 2.4,
             rng: Pcg64::from_entropy(),
             state: [0.0; 4],
             steps_beyond_done: None,
+            score: 0.0,
         }
     }
 }
@@ -152,11 +162,12 @@ impl GymEnv for CartPoleEnv {
         } else {
             if self.steps_beyond_done.unwrap() == 0 {
                 warn!("You are calling 'step()' even though this \
-                environment has already returned done = true. Yout should always call 'reset()' \
+                environment has already returned done = true. You should always call 'reset()' \
                 once you receive 'done = true' -- any further steps are undefined behaviour");
             }
             0.0
         };
+        self.score += reward;
 
         (self.state.to_vec(), reward, done, None)
     }
@@ -170,13 +181,58 @@ impl GymEnv for CartPoleEnv {
             self.rng.sample(d)
         ];
         self.steps_beyond_done = None;
+        self.score = 0.0;
 
         self.state.to_vec()
     }
 
-    fn render(&self) {
-        // TODO: render cart_pole
-        unimplemented!()
+    fn render(&self, viewer: &mut Viewer) {
+       if let Some(e) = viewer.window.next() {
+           let width: f64 = viewer.window_width as f64;
+           let track_y: f64 = 0.75 * viewer.window_height as f64;
+           let cart_x: f64 = scale(-2.4, 2.4, 0.0, viewer.window_width as f64, self.state[0]);
+           let cart_width: f64 = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.0833);
+           let cart_height: f64 = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.075);
+           // in original gym implementation pole_len gets multiplied by 2.0, but this renders it too long
+           let pole_len: f64 = (viewer.window_width as f64 / self.x_threshold * 2.0) * self.length;
+           // let (pole_top_x, pole_top_y) = rotate((cart_x, track_y), (cart_x, track_y - pole_len), -self.state[2]);
+           let pole_top_x: f64 = cart_x + (-pole_len * -self.state[2].sin());
+           let pole_top_y: f64 = track_y - (pole_len * -self.state[2].cos());
+           let glyphs = &mut viewer.glyphs;
+           viewer.window.draw_2d(&e, |c, g, d| {
+               clear([0.5, 1.0, 0.5, 1.0], g);
+
+               // draw track
+               rectangle([0.1, 0.1, 0.1, 1.0],  // color
+                [0.0, track_y, width, 10.0],  // [x, y, w, h]
+                   c.transform, g);
+
+               // draw cart
+               rectangle([0.05, 0.05, 0.05, 1.0],
+                    [cart_x - cart_width / 2.0, track_y - cart_height / 2.0, cart_width, cart_height],
+                         c.transform, g);
+
+               // draw pole
+               line([0.859, 0.506, 0.0, 1.0],
+                    5.0,
+                    [cart_x, track_y, pole_top_x, track_y - (track_y - pole_top_y).abs()],
+                    c.transform,
+                    g);
+
+               // draw score
+               text::Text::new_color([0.0, 1.0, 0.0, 1.0], 32).draw(
+                   &format!("SCORE: {}", self.score),
+                   glyphs,
+                   &c.draw_state,
+                   c.transform, g
+               ).unwrap();
+
+               // update glyphs before rendering
+               glyphs.factory.encoder.flush(d);
+           });
+
+           thread::sleep(Duration::from_millis((self.tau * 1000.0) as u64));
+       }
     }
 
     fn seed(&mut self, seed: u64) {
@@ -184,3 +240,25 @@ impl GymEnv for CartPoleEnv {
     }
 }
 
+/// rotate a point given radians around it's origin
+fn rotate(origin: (f64, f64), point: (f64, f64), radians: f64) -> (f64, f64) {
+    let s: f64 = radians.sin();
+    let c: f64 = radians.cos();
+
+    let mut new_x: f64 = point.0;
+    let mut new_y: f64 = point.1;
+
+    // translate point back to origin
+    new_x -= origin.0;
+    new_y -= origin.1;
+
+    // rotate point
+    let x_new: f64 = point.0 * c - point.1 * s;
+    let y_new: f64 = point.0 + s + point.1 * c;
+
+    // translate point back
+    new_x = x_new + origin.0;
+    new_y = y_new + origin.1;
+
+    (new_x, new_y)
+}

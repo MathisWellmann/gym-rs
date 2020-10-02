@@ -1,14 +1,15 @@
 /*
 Cart Pole Environment using random actions
-without rendering of the environment
+with rendering of the environment
 */
-
 use gym_rs::{CartPoleEnv, GymEnv, ActionType, Viewer};
 use rand::{thread_rng, Rng};
 
 fn main() {
     let mut env = CartPoleEnv::default();
     env.seed(0);
+
+    let mut viewer = Viewer::new(1080, 1080);
 
     let mut _state: Vec<f64> = env.reset();
 
@@ -24,6 +25,8 @@ fn main() {
         let (_state, reward, done, _info) = env.step(action);
         end = done;
         total_reward += reward;
+
+        env.render(&mut viewer);
     }
     println!("total_reward: {}", total_reward);
 }

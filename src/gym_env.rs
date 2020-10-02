@@ -1,4 +1,4 @@
-use crate::ActionType;
+use crate::{ActionType, Viewer};
 
 pub trait GymEnv {
     /*
@@ -21,7 +21,7 @@ pub trait GymEnv {
     fn reset(&mut self) -> Vec<f64>;
 
     /// Render the environment
-    fn render(&self);
+    fn render(&self, viewer: &mut Viewer);
 
     /// Set the seed for this environments random number generator
     fn seed(&mut self, seed: u64);
