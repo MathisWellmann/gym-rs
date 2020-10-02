@@ -240,26 +240,3 @@ impl GymEnv for CartPoleEnv {
         self.rng = Pcg64::seed_from_u64(seed);
     }
 }
-
-/// rotate a point given radians around it's origin
-fn rotate(origin: (f64, f64), point: (f64, f64), radians: f64) -> (f64, f64) {
-    let s: f64 = radians.sin();
-    let c: f64 = radians.cos();
-
-    let mut new_x: f64 = point.0;
-    let mut new_y: f64 = point.1;
-
-    // translate point back to origin
-    new_x -= origin.0;
-    new_y -= origin.1;
-
-    // rotate point
-    let x_new: f64 = point.0 * c - point.1 * s;
-    let y_new: f64 = point.0 + s + point.1 * c;
-
-    // translate point back
-    new_x = x_new + origin.0;
-    new_y = y_new + origin.1;
-
-    (new_x, new_y)
-}

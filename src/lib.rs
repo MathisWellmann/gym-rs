@@ -1,6 +1,7 @@
 #[macro_use] extern crate log;
 
 mod cart_pole;
+mod mountain_car;
 mod viewer;
 mod gym_env;
 mod action_type;
