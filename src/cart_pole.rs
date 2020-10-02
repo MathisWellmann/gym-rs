@@ -97,8 +97,7 @@ impl Default for CartPoleEnv {
             force_mag: 10.0,
             tau: 0.02,
             kinematics_integrator: KinematicsIntegrator::Euler,
-            // TODO: change to 12 *
-            theta_threshold_radians: 45.0 * 2.0 * std::f64::consts::PI / 360.0,
+            theta_threshold_radians: 12.0 * 2.0 * std::f64::consts::PI / 360.0,
             x_threshold: 2.4,
             rng: Pcg64::from_entropy(),
             state: [0.0; 4],
@@ -193,11 +192,13 @@ impl GymEnv for CartPoleEnv {
            let cart_x: f64 = scale(-2.4, 2.4, 0.0, viewer.window_width as f64, self.state[0]);
            let cart_width: f64 = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.0833);
            let cart_height: f64 = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.075);
+
            // in original gym implementation pole_len gets multiplied by 2.0, but this renders it too long
            let pole_len: f64 = (viewer.window_width as f64 / self.x_threshold * 2.0) * self.length;
-           // let (pole_top_x, pole_top_y) = rotate((cart_x, track_y), (cart_x, track_y - pole_len), -self.state[2]);
+
            let pole_top_x: f64 = cart_x + (-pole_len * -self.state[2].sin());
            let pole_top_y: f64 = track_y - (pole_len * -self.state[2].cos());
+
            let glyphs = &mut viewer.glyphs;
            viewer.window.draw_2d(&e, |c, g, d| {
                clear([0.5, 1.0, 0.5, 1.0], g);
