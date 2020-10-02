@@ -19,7 +19,7 @@ fn main() {
     let mut end: bool = false;
     let mut total_reward: f64 = 0.0;
     while !end {
-        if total_reward > 200.0 {
+        if total_reward > 500.0 {
             println!("SOLVED!");
             break;
         }
