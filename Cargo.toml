@@ -12,11 +12,16 @@ rand_pcg = "0.2.1"
 log = "0.4.11"
 num = "0.3.0"
 find_folder = "0.3.0"
-
 piston_window = "0.113.0"
+
+cge = { git = "https://github.com/MathisWellmann/cge", optional = true }
 
 [[example]]
 name = "cart_pole_random"
 
 [[example]]
 name = "cart_pole_random_render"
+
+[[example]]
+name = "cart_pole_solved_render"
+required-features = ["cge"]

@@ -13,36 +13,49 @@ Put this in your Cargo.toml
 ```toml
 gym_rs = { git = "https://www.github.com/MathisWellmann/gym-rs" }
 ```
+If you want to render the environment like in the example below,
+copy the folder "font" into your crates root directory just like in this repository, 
+so that the window rendering can find the font. Otherwise rendering will panic as it cannot find the anon.ttf file.
+TODO: would be nice to not rely on a font file but rather integrate it into Viewer.
 
 ## Example
-Here is how you can use the cart_pole environment with a randomly acting agent and rendering enabled:
+Here is how you can use the cart_pole environment with a trained neural network agent from a file 
+using the common genetic encoding ([cge](https://www.github.com/MathisWellmann/cge))  and rendering enabled:
 ```rust
 /*
-Cart Pole Environment using random actions
-with rendering of the environment
+Cart Pole Environment solved using Neat
+with a network in the form of a common genetic encoding (cge crate)
 */
+extern crate cge;
+
 use gym_rs::{CartPoleEnv, GymEnv, ActionType, Viewer};
-use rand::{thread_rng, Rng};
 
 fn main() {
+    // load the network from file
+    let mut net = cge::Network::load_from_file("./examples/gym_cart_pole_champion.cge").unwrap();
+
     let mut env = CartPoleEnv::default();
-    env.seed(0);
 
     let mut viewer = Viewer::new(1080, 1080);
 
-    let mut _state: Vec<f64> = env.reset();
+    let mut state: Vec<f64> = env.reset();
 
-    // This produces a different action (random number) with every run,
-    // if you would like the agent to behave the same, use Pcg64 with seeding,
-    // see env.seed for how it is done in the environment.
-    let mut rng = thread_rng();
     let mut end: bool = false;
     let mut total_reward: f64 = 0.0;
     while !end {
-        // randomly choose a discrete action to take
-        let action = ActionType::Discrete(rng.gen_range(0, 2));
-        let (_state, reward, done, _info) = env.step(action);
+        if total_reward > 200.0 {
+            println!("SOLVED!");
+            break;
+        }
+        let output = net.evaluate(&state);
+        let action: ActionType = if output[0] < 0.0 {
+            ActionType::Discrete(0)
+        } else {
+            ActionType::Discrete(1)
+        };
+        let (s, reward, done, _info) = env.step(action);
         end = done;
+        state = s;
         total_reward += reward;
 
         env.render(&mut viewer);
@@ -72,6 +85,7 @@ Any Help is highly appreciated and benefits the Rust and ML/AI community greatly
 - make generic implementation and compare f32 vs f64 performance.
 - publish on crates.io
 - make piston_window dependency optional by introducing a render feature if possible
+- remove the need for a font file
 
 ## License
 gym-rs is licensed under MIT License just like OpenAI's Gym.
