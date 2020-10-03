@@ -1,7 +1,11 @@
 use crate::{GymEnv, ActionType, Viewer};
+use crate::utils::scale;
 use rand_pcg::Pcg64;
 use rand::{SeedableRng, Rng};
 use rand::distributions::Uniform;
+use piston_window::*;
+use std::time::Duration;
+use std::thread;
 
 /*
 Description:
@@ -51,6 +55,12 @@ pub struct MountainCarEnv {
     gravity: f64,
     state: [f64; 2],
     episode_length: usize,
+}
+
+impl MountainCarEnv {
+    pub fn episode_length(&self) -> usize {
+        self.episode_length
+    }
 }
 
 impl Default for MountainCarEnv {
@@ -117,8 +127,58 @@ impl GymEnv for MountainCarEnv {
 
     /// render the environment using 30 frames per second
     fn render(&self, viewer: &mut Viewer) {
-        // TODO:
-        unimplemented!()
+        if let Some(e) = viewer.window.next() {
+            let cart_width = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.066);
+            let cart_height = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.05);
+            let width = viewer.window_width as f64;
+            let height = viewer.window_height as f64;
+
+            viewer.window.draw_2d(&e, |c, g, d| {
+                clear([0.5, 1.0, 0.5, 1.0], g);
+
+                // draw track
+                let xs: Vec<f64> = (0..100)
+                    .map(|i| scale::<f64>(0.0, 100.0, self.min_position, self.max_position, i as f64))
+                    .collect::<Vec<f64>>();
+                let ys: Vec<f64> = xs.iter()
+                    .map(|v| (3.0 * v).sin() * 0.45 + 0.55)
+                    .collect();
+                let xys: Vec<[f64; 2]> = xs.iter()
+                    .zip(&ys)
+                    .map(|(x, y)| {
+                        let x_scaled: f64 = scale(self.min_position, self.max_position, 0.0, width, *x);
+                        let y_scaled: f64 = height - scale(0.0, 1.0, 0.0, height, *y);
+                        [x_scaled, y_scaled]
+                    })
+                    .collect();
+                // Draw path one line at a time
+                for (i, xy) in xys.iter().enumerate() {
+                    if i == 0 { continue }
+                    line_from_to([0.0, 0.0, 0.0, 1.0],
+                                 1.0,
+                                 *xy,
+                                 xys[i - 1],
+                                 c.transform,
+                                 g);
+                }
+
+                // draw cart
+                let cart_x: f64 = scale(-1.2, 0.6, 0.0, width, self.state[0]);
+                let cart_y: f64 = height - scale(0.0, 1.0, 0.0, height, (3.0 * self.state[0]).sin() * 0.45 + 0.55);  // TODO: map to curve
+                rectangle([0.1, 0.1, 0.1, 1.0],
+                          [cart_x - cart_width / 2.0, cart_y - cart_height / 2.0, cart_width, cart_height],
+                          c.transform,
+                          g);
+
+                // TODO: rotate cart body depending on hill angle
+
+                // TODO: draw finish
+
+                // TODO: draw wheels
+            });
+            // run at ~30 frames per second
+            thread::sleep(Duration::from_millis(33));
+        }
     }
 
     fn seed(&mut self, seed: u64) {
