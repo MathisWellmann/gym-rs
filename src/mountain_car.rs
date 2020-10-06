@@ -23,10 +23,15 @@ Observation:
     1       Car Velocity        -0.07   0.07
 
 Actions:
+    In case of discrete action:
     Num    Action
     0      Accelerate to the left
     1      Don't accelerate
     2      Accelerate to the right
+
+    In case of continuous action, apply a force in range [-1.0, 1.0],
+    1.0 being maximum acceleration to the right,
+    -1.0 being maximum acceleration to the left
 
     Note: This does not affect the amount of velocity affected by the gravitational pull acting on the cart.
 
@@ -82,15 +87,27 @@ impl Default for MountainCarEnv {
 
 impl GymEnv for MountainCarEnv {
     fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
-        let action: u8 = match action {
-            ActionType::Discrete(a) => a,
-            ActionType::Continuous(_) => panic!("continuous action is not supported in this environment"),
+        let action: f64 = match action {
+            ActionType::Discrete(a) => {
+                a as f64 - 1.0
+            },
+            ActionType::Continuous(a) => {
+                assert_eq!(a.len(), 1, "action vector has to have length of 1");
+                // continuous action in range [-1.0, 1.0]
+                if a[0] < -1.0 {
+                    -1.0
+                } else if a[0] > 1.0 {
+                    1.0
+                } else {
+                    a[0]
+                }
+            },
         };
 
         let mut position = self.state[0];
         let mut velocity = self.state[1];
 
-        velocity += (action as f64 - 1.0) * self.force + (3.0 * position).cos() * (-self.gravity);
+        velocity += action * self.force + (3.0 * position).cos() * (-self.gravity);
         if velocity > self.max_speed {
             velocity = self.max_speed;
         } else if velocity < -self.max_speed {

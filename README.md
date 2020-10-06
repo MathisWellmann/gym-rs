@@ -18,6 +18,11 @@ copy the folder "font" into your crates root directory just like in this reposit
 so that the window rendering can find the font. Otherwise rendering will panic as it cannot find the anon.ttf file.
 TODO: would be nice to not rely on a font file but rather integrate it into Viewer.
 
+## Environments
+- Cart Pole (discrete action)
+- Mountain car (discrete action)
+- Mountain car (continuous action)
+
 ## Example
 Here is how you can use the cart_pole environment with a trained neural network agent from a file 
 using the common genetic encoding ([cge](https://www.github.com/MathisWellmann/cge))  and rendering enabled:
