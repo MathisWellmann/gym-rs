@@ -22,6 +22,7 @@ TODO: would be nice to not rely on a font file but rather integrate it into View
 - Cart Pole (discrete action)
 - Mountain car (discrete action)
 - Mountain car (continuous action)
+- Pendulum (continuous action)
 
 ## Example
 Here is how you can use the cart_pole environment with a trained neural network agent from a file 

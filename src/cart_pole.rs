@@ -8,7 +8,6 @@ use std::thread;
 use piston_window::*;
 use piston_window::glyph_cache::rusttype::GlyphCache;
 use std::time::Duration;
-use std::path::Path;
 
 /*
 Description:
