@@ -184,7 +184,6 @@ impl GymEnv for MountainCarEnv {
     fn seed(&mut self, seed: u64) {
         self.rng = Pcg64::seed_from_u64(seed);
     }
-
 }
 
 #[cfg(test)]

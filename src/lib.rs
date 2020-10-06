@@ -12,5 +12,4 @@ pub use cart_pole::CartPoleEnv;
 pub use mountain_car::MountainCarEnv;
 pub use action_type::ActionType;
 pub use viewer::Viewer;
-
-pub(crate) use utils::scale;
+pub use utils::scale;
