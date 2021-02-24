@@ -1,13 +1,13 @@
-use crate::{GymEnv, ActionType, Viewer};
 use crate::utils::scale;
-use rand_pcg::Pcg64;
-use rand::{SeedableRng, Rng};
-use rand::distributions::Uniform;
+use crate::{ActionType, GymEnv, Viewer};
 use piston_window::*;
-use std::time::Duration;
+use rand::distributions::Uniform;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
 use std::thread;
+use std::time::Duration;
 
-/*
+/**
 Description:
     The agent (a car) is started at the bottom of a valley. For any given
     state, the agent may choose to accelerate to the left, right or cease
@@ -48,7 +48,7 @@ Starting State:
 Episode Termination:
     The car position is more than 0.5
     Episode length is greater than 200
-*/
+**/
 pub struct MountainCarEnv {
     rng: Pcg64,
     min_position: f64,
@@ -63,6 +63,7 @@ pub struct MountainCarEnv {
 }
 
 impl MountainCarEnv {
+    /// Return the current length of the episode, which increases with each step
     pub fn episode_length(&self) -> usize {
         self.episode_length
     }
@@ -88,9 +89,7 @@ impl Default for MountainCarEnv {
 impl GymEnv for MountainCarEnv {
     fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
         let action: f64 = match action {
-            ActionType::Discrete(a) => {
-                a as f64 - 1.0
-            },
+            ActionType::Discrete(a) => a as f64 - 1.0,
             ActionType::Continuous(a) => {
                 assert_eq!(a.len(), 1, "action vector has to have length of 1");
                 // continuous action in range [-1.0, 1.0]
@@ -101,7 +100,7 @@ impl GymEnv for MountainCarEnv {
                 } else {
                     a[0]
                 }
-            },
+            }
         };
 
         let mut position = self.state[0];
@@ -135,10 +134,7 @@ impl GymEnv for MountainCarEnv {
 
     fn reset(&mut self) -> Vec<f64> {
         let d = Uniform::new(-0.6, -0.4);
-        self.state = [
-            self.rng.sample(d),
-            0.0
-        ];
+        self.state = [self.rng.sample(d), 0.0];
         self.state.to_vec()
     }
 
@@ -150,42 +146,55 @@ impl GymEnv for MountainCarEnv {
             let width = viewer.window_width as f64;
             let height = viewer.window_height as f64;
 
-            viewer.window.draw_2d(&e, |c, g, d| {
+            viewer.window.draw_2d(&e, |c, g, _d| {
                 clear([0.5, 1.0, 0.5, 1.0], g);
 
                 // draw track
                 let xs: Vec<f64> = (0..100)
-                    .map(|i| scale::<f64>(0.0, 100.0, self.min_position, self.max_position, i as f64))
+                    .map(|i| {
+                        scale::<f64>(0.0, 100.0, self.min_position, self.max_position, i as f64)
+                    })
                     .collect::<Vec<f64>>();
-                let ys: Vec<f64> = xs.iter()
-                    .map(|v| (3.0 * v).sin() * 0.45 + 0.55)
-                    .collect();
-                let xys: Vec<[f64; 2]> = xs.iter()
+                let ys: Vec<f64> = xs.iter().map(|v| (3.0 * v).sin() * 0.45 + 0.55).collect();
+                let xys: Vec<[f64; 2]> = xs
+                    .iter()
                     .zip(&ys)
                     .map(|(x, y)| {
-                        let x_scaled: f64 = scale(self.min_position, self.max_position, 0.0, width, *x);
+                        let x_scaled: f64 =
+                            scale(self.min_position, self.max_position, 0.0, width, *x);
                         let y_scaled: f64 = height - scale(0.0, 1.0, 0.0, height, *y);
                         [x_scaled, y_scaled]
                     })
                     .collect();
                 // Draw path one line at a time
                 for (i, xy) in xys.iter().enumerate() {
-                    if i == 0 { continue }
-                    line_from_to([0.0, 0.0, 0.0, 1.0],
-                                 1.0,
-                                 *xy,
-                                 xys[i - 1],
-                                 c.transform,
-                                 g);
+                    if i == 0 {
+                        continue;
+                    }
+                    line_from_to([0.0, 0.0, 0.0, 1.0], 1.0, *xy, xys[i - 1], c.transform, g);
                 }
 
                 // draw cart
                 let cart_x: f64 = scale(-1.2, 0.6, 0.0, width, self.state[0]);
-                let cart_y: f64 = height - scale(0.0, 1.0, 0.0, height, (3.0 * self.state[0]).sin() * 0.45 + 0.55);  // TODO: map to curve
-                rectangle([0.1, 0.1, 0.1, 1.0],
-                          [cart_x - cart_width / 2.0, cart_y - cart_height / 2.0, cart_width, cart_height],
-                          c.transform,
-                          g);
+                let cart_y: f64 = height
+                    - scale(
+                        0.0,
+                        1.0,
+                        0.0,
+                        height,
+                        (3.0 * self.state[0]).sin() * 0.45 + 0.55,
+                    ); // TODO: map to curve
+                rectangle(
+                    [0.1, 0.1, 0.1, 1.0],
+                    [
+                        cart_x - cart_width / 2.0,
+                        cart_y - cart_height / 2.0,
+                        cart_width,
+                        cart_height,
+                    ],
+                    c.transform,
+                    g,
+                );
 
                 // TODO: rotate cart body depending on hill angle
 

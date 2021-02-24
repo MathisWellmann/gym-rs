@@ -6,25 +6,28 @@ This library aims be be as close to the original OpenAI Gym library which is wri
 and translate it into Rust for blazingly fast performance.
 This will make the use of Python unnecessary which is awesome.
 
-If you don't mind Python, check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
+If you don't mind Python and would like to use the original implementation from Rust,
+ check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
 
-## Installation
-Put this in your Cargo.toml
+### How to use
+To use this crate in your project, put this in your Cargo.toml:
+
 ```toml
 gym_rs = { git = "https://www.github.com/MathisWellmann/gym-rs" }
 ```
+
 If you want to render the environment like in the example below,
 copy the folder "font" into your crates root directory just like in this repository, 
 so that the window rendering can find the font. Otherwise rendering will panic as it cannot find the anon.ttf file.
 TODO: would be nice to not rely on a font file but rather integrate it into Viewer.
 
-## Environments
+### Environments
 - Cart Pole (discrete action)
 - Mountain car (discrete action)
 - Mountain car (continuous action)
 - Pendulum (continuous action)
 
-## Example
+### Example
 Here is how you can use the cart_pole environment with a trained neural network agent from a file 
 using the common genetic encoding ([cge](https://www.github.com/MathisWellmann/cge))  and rendering enabled:
 ```rust
@@ -69,22 +72,15 @@ fn main() {
     println!("total_reward: {}", total_reward);
 }
 ```
+
 Run it with:
 ```
-cargo run --release --example cart_pole
+cargo run --release --example cart_pole_solved_render --features="cge"
 ```
 
 See [examples](https://github.com/MathisWellmann/gym-rs/tree/master/examples) folder for all the examples
 
-
-## Contributions are welcome!
-If you would like to add an environment or a feature, please fork this repository and create a pull request 
-with your changes. Adding new environments should be as easy as translating from Python to Rust. See 
-[OpenAI/gym](https://github.com/openai/gym)
-for environments that are not yet implemented here! There is alot of easy work to be done here.
-Any Help is highly appreciated and benefits the Rust and ML/AI community greatly!
-
-## TODOs:
+### TODOs:
 - implement more environments
 - extensive documentation
 - compare performance to gym-rs python wrapper
@@ -93,7 +89,24 @@ Any Help is highly appreciated and benefits the Rust and ML/AI community greatly
 - make piston_window dependency optional by introducing a render feature if possible
 - remove the need for a font file
 
-## License
+### Contributions are welcome!
+If you would like to add an environment or a feature, please fork this repository and create a pull request 
+with your changes. Adding new environments should be as easy as translating from Python to Rust. See 
+[OpenAI/gym](https://github.com/openai/gym)
+for environments that are not yet implemented here! There is a lot of easy work to be done here.
+Any Help is highly appreciated and benefits the Rust and ML/AI community greatly!
+
+### Donations :moneybag: :money_with_wings:
+I you would like to support the development of this crate, feel free to send over a donation:
+
+Monero (XMR) address:
+```plain
+47xMvxNKsCKMt2owkDuN1Bci2KMiqGrAFCQFSLijWLs49ua67222Wu3LZryyopDVPYgYmAnYkSZSz9ZW2buaDwdyKTWGwwb
+```
+
+![monero](img/monero_donations_qrcode.png)
+
+### License
 gym-rs is licensed under MIT License just like OpenAI's Gym.
 
 See [LICENSE.md](https://github.com/MathisWellmann/gym-rs/blob/master/LICENSE.md) for further details.

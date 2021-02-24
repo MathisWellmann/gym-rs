@@ -1,12 +1,11 @@
 extern crate find_folder;
 
-use crate::{GymEnv, ActionType, Viewer, scale};
+use crate::{scale, ActionType, GymEnv, Viewer};
+use piston_window::*;
+use rand::distributions::Uniform;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
-use rand::distributions::Uniform;
 use std::thread;
-use piston_window::*;
-use piston_window::glyph_cache::rusttype::GlyphCache;
 use std::time::Duration;
 
 /*
@@ -56,15 +55,16 @@ Starting State:
     195.0 over 100 consecutive trials.
 */
 #[derive(Debug)]
+/// The cart pole environment
 pub struct CartPoleEnv {
     gravity: f64,
     mass_cart: f64,
     mass_pole: f64,
     total_mass: f64,
-    length: f64,  // actually half the pole's length
+    length: f64, // actually half the pole's length
     pole_mass_length: f64,
     force_mag: f64,
-    tau: f64,  // seconds between state updates
+    tau: f64, // seconds between state updates
     kinematics_integrator: KinematicsIntegrator,
     // Angle at which to fail the episode
     theta_threshold_radians: f64,
@@ -72,10 +72,11 @@ pub struct CartPoleEnv {
     rng: Pcg64,
     state: [f64; 4],
     steps_beyond_done: Option<usize>,
-    score: f64,  // cumulative reward used to rendering to window
+    score: f64, // cumulative reward used to rendering to window
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum KinematicsIntegrator {
     Euler,
     SemiImplicitEuler,
@@ -121,13 +122,15 @@ impl GymEnv for CartPoleEnv {
         let force: f64 = if action == 1 {
             self.force_mag
         } else {
-            - self.force_mag
+            -self.force_mag
         };
         let cos_theta: f64 = theta.cos();
         let sin_theta: f64 = theta.sin();
 
-        let temp: f64 = (force + self.pole_mass_length * theta_dot.powi(2) * sin_theta) / self.total_mass;
-        let theta_acc: f64 = (self.gravity * sin_theta - cos_theta * temp) / (self.length * (4.0 / 3.0 -self.mass_pole * cos_theta.powi(2) / self.total_mass));
+        let temp: f64 =
+            (force + self.pole_mass_length * theta_dot.powi(2) * sin_theta) / self.total_mass;
+        let theta_acc: f64 = (self.gravity * sin_theta - cos_theta * temp)
+            / (self.length * (4.0 / 3.0 - self.mass_pole * cos_theta.powi(2) / self.total_mass));
         let x_acc: f64 = temp - self.pole_mass_length * theta_acc * cos_theta / self.total_mass;
 
         match self.kinematics_integrator {
@@ -136,7 +139,7 @@ impl GymEnv for CartPoleEnv {
                 x_dot += self.tau * x_acc;
                 theta += self.tau * theta_dot;
                 theta_dot += self.tau * theta_acc;
-            },
+            }
             KinematicsIntegrator::SemiImplicitEuler => {
                 x_dot += self.tau * x_acc;
                 x += self.tau * x_dot;
@@ -159,9 +162,11 @@ impl GymEnv for CartPoleEnv {
             1.0
         } else {
             if self.steps_beyond_done.unwrap() == 0 {
-                warn!("You are calling 'step()' even though this \
+                warn!(
+                    "You are calling 'step()' even though this \
                 environment has already returned done = true. You should always call 'reset()' \
-                once you receive 'done = true' -- any further steps are undefined behaviour");
+                once you receive 'done = true' -- any further steps are undefined behaviour"
+                );
             }
             0.0
         };
@@ -176,7 +181,7 @@ impl GymEnv for CartPoleEnv {
             self.rng.sample(d),
             self.rng.sample(d),
             self.rng.sample(d),
-            self.rng.sample(d)
+            self.rng.sample(d),
         ];
         self.steps_beyond_done = None;
         self.score = 0.0;
@@ -185,54 +190,75 @@ impl GymEnv for CartPoleEnv {
     }
 
     fn render(&self, viewer: &mut Viewer) {
-       if let Some(e) = viewer.window.next() {
-           let width: f64 = viewer.window_width as f64;
-           let track_y: f64 = 0.75 * viewer.window_height as f64;
-           let cart_x: f64 = scale(-2.4, 2.4, 0.0, viewer.window_width as f64, self.state[0]);
-           let cart_width: f64 = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.0833);
-           let cart_height: f64 = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.075);
+        if let Some(e) = viewer.window.next() {
+            let width: f64 = viewer.window_width as f64;
+            let track_y: f64 = 0.75 * viewer.window_height as f64;
+            let cart_x: f64 = scale(-2.4, 2.4, 0.0, viewer.window_width as f64, self.state[0]);
+            let cart_width: f64 = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.0833);
+            let cart_height: f64 = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.075);
 
-           // in original gym implementation pole_len gets multiplied by 2.0, but this renders it too long
-           let pole_len: f64 = (viewer.window_width as f64 / self.x_threshold * 2.0) * self.length;
+            // in original gym implementation pole_len gets multiplied by 2.0, but this renders it too long
+            let pole_len: f64 = (viewer.window_width as f64 / self.x_threshold * 2.0) * self.length;
 
-           let pole_top_x: f64 = cart_x + (-pole_len * -self.state[2].sin());
-           let pole_top_y: f64 = track_y - (pole_len * -self.state[2].cos());
+            let pole_top_x: f64 = cart_x + (-pole_len * -self.state[2].sin());
+            let pole_top_y: f64 = track_y - (pole_len * -self.state[2].cos());
 
-           let glyphs = &mut viewer.glyphs;
-           viewer.window.draw_2d(&e, |c, g, d| {
-               clear([0.5, 1.0, 0.5, 1.0], g);
+            let glyphs = &mut viewer.glyphs;
+            viewer.window.draw_2d(&e, |c, g, d| {
+                clear([0.5, 1.0, 0.5, 1.0], g);
 
-               // draw track
-               rectangle([0.1, 0.1, 0.1, 1.0],  // color
-                [0.0, track_y, width, 10.0],  // [x, y, w, h]
-                   c.transform, g);
-
-               // draw cart
-               rectangle([0.05, 0.05, 0.05, 1.0],
-                    [cart_x - cart_width / 2.0, track_y - cart_height / 2.0, cart_width, cart_height],
-                         c.transform, g);
-
-               // draw pole
-               line([0.859, 0.506, 0.0, 1.0],
-                    5.0,
-                    [cart_x, track_y, pole_top_x, track_y - (track_y - pole_top_y).abs()],
+                // draw track
+                rectangle(
+                    [0.1, 0.1, 0.1, 1.0],        // color
+                    [0.0, track_y, width, 10.0], // [x, y, w, h]
                     c.transform,
-                    g);
+                    g,
+                );
 
-               // draw score
-               text::Text::new_color([0.0, 1.0, 0.0, 1.0], 32).draw(
-                   &format!("SCORE: {}", self.score),
-                   glyphs,
-                   &c.draw_state,
-                   c.transform, g
-               ).unwrap();
+                // draw cart
+                rectangle(
+                    [0.05, 0.05, 0.05, 1.0],
+                    [
+                        cart_x - cart_width / 2.0,
+                        track_y - cart_height / 2.0,
+                        cart_width,
+                        cart_height,
+                    ],
+                    c.transform,
+                    g,
+                );
 
-               // update glyphs before rendering
-               glyphs.factory.encoder.flush(d);
-           });
+                // draw pole
+                line(
+                    [0.859, 0.506, 0.0, 1.0],
+                    5.0,
+                    [
+                        cart_x,
+                        track_y,
+                        pole_top_x,
+                        track_y - (track_y - pole_top_y).abs(),
+                    ],
+                    c.transform,
+                    g,
+                );
 
-           thread::sleep(Duration::from_millis((self.tau * 1000.0) as u64));
-       }
+                // draw score
+                text::Text::new_color([0.0, 1.0, 0.0, 1.0], 32)
+                    .draw(
+                        &format!("SCORE: {}", self.score),
+                        glyphs,
+                        &c.draw_state,
+                        c.transform,
+                        g,
+                    )
+                    .unwrap();
+
+                // update glyphs before rendering
+                glyphs.factory.encoder.flush(d);
+            });
+
+            thread::sleep(Duration::from_millis((self.tau * 1000.0) as u64));
+        }
     }
 
     fn seed(&mut self, seed: u64) {

@@ -1,7 +1,8 @@
 use crate::{ActionType, Viewer};
 
+/// The trait which defines the needed methods an environment needs to provide
 pub trait GymEnv {
-    /*
+    /**
     Run one timestep of the environment's dynamics. When end of episode is reached,
     you you are responsible for calling 'reset()' to reset this environment's state
 
@@ -12,7 +13,7 @@ pub trait GymEnv {
         reward: amount of reward returned after previous action
         done: whether the episode has ended
         info: optional information string
-    */
+    **/
     fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>);
 
     /// Reset the environment to an initial state

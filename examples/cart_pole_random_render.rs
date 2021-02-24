@@ -2,7 +2,7 @@
 Cart Pole Environment using random actions
 with rendering of the environment
 */
-use gym_rs::{CartPoleEnv, GymEnv, ActionType, Viewer};
+use gym_rs::{ActionType, CartPoleEnv, GymEnv, Viewer};
 use rand::{thread_rng, Rng};
 
 fn main() {

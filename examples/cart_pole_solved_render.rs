@@ -4,7 +4,7 @@ with a network in the form of a common genetic encoding (cge crate)
 */
 extern crate cge;
 
-use gym_rs::{CartPoleEnv, GymEnv, ActionType, Viewer};
+use gym_rs::{ActionType, CartPoleEnv, GymEnv, Viewer};
 
 fn main() {
     // load the network from file

@@ -1,12 +1,12 @@
-use crate::{GymEnv, ActionType, Viewer};
-use rand_pcg::Pcg64;
-use rand::{SeedableRng, Rng};
-use rand::distributions::Uniform;
+use crate::{ActionType, GymEnv, Viewer};
 use piston_window::*;
+use rand::distributions::Uniform;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
 use std::thread;
 use std::time::Duration;
 
-/*
+/**
 Description:
     The inverted pendulum swingup problem is a classic problem in the control literature.
     In this version of the problem, the pendulum starts in a random position,
@@ -23,7 +23,7 @@ Observation
 
 Actions:
 
-*/
+**/
 pub struct PendulumEnv {
     rng: Pcg64,
     state: [f64; 2],
@@ -52,11 +52,7 @@ impl Default for PendulumEnv {
 
 impl PendulumEnv {
     fn get_obs(&self) -> Vec<f64> {
-        vec![
-            self.state[0].cos(),
-            self.state[0].sin(),
-            self.state[1],
-        ]
+        vec![self.state[0].cos(), self.state[0].sin(), self.state[1]]
     }
 
     fn angle_normalize(theta: f64) -> f64 {
@@ -81,11 +77,13 @@ impl GymEnv for PendulumEnv {
             u = self.max_torque;
         }
 
-        let costs: f64 = Self::angle_normalize(theta).powi(2) + 0.1 * theta_dot.powi(2) + 0.001 * u.powi(2);
+        let costs: f64 =
+            Self::angle_normalize(theta).powi(2) + 0.1 * theta_dot.powi(2) + 0.001 * u.powi(2);
 
-        let mut new_theta_dot: f64 = theta_dot + (-3.0 * self.g / (2.0 * self.l)
-            * (theta + std::f64::consts::PI).sin() + 2.0 / (self.m * self.l.powi(2)) * u)
-            * self.dt;
+        let mut new_theta_dot: f64 = theta_dot
+            + (-3.0 * self.g / (2.0 * self.l) * (theta + std::f64::consts::PI).sin()
+                + 2.0 / (self.m * self.l.powi(2)) * u)
+                * self.dt;
         let new_theta = theta + new_theta_dot * self.dt;
         // clip new_theta_dot to max speed
         if new_theta_dot > self.max_speed {
@@ -94,10 +92,7 @@ impl GymEnv for PendulumEnv {
             new_theta_dot = -self.max_speed;
         }
 
-        self.state = [
-            new_theta,
-            new_theta_dot
-        ];
+        self.state = [new_theta, new_theta_dot];
 
         (self.get_obs(), -costs, false, None)
     }
@@ -106,10 +101,7 @@ impl GymEnv for PendulumEnv {
         let d_0 = Uniform::new(-std::f64::consts::PI, std::f64::consts::PI);
         let d_1 = Uniform::new(-1.0, 1.0);
 
-        self.state = [
-            self.rng.sample(d_0),
-            self.rng.sample(d_1),
-        ];
+        self.state = [self.rng.sample(d_0), self.rng.sample(d_1)];
 
         self.get_obs()
     }
@@ -118,7 +110,7 @@ impl GymEnv for PendulumEnv {
         let width: f64 = viewer.window_width as f64;
         let height: f64 = viewer.window_height as f64;
         if let Some(e) = viewer.window.next() {
-            viewer.window.draw_2d(&e, |c, g, d| {
+            viewer.window.draw_2d(&e, |c, g, _d| {
                 clear([0.5, 1.0, 0.5, 1.0], g);
 
                 let center_x: f64 = width / 2.0;
@@ -128,12 +120,14 @@ impl GymEnv for PendulumEnv {
                 let top_y: f64 = center_y + (pole_len * -self.state[0].cos());
 
                 // Draw pendulum
-                line_from_to([0.1, 0.1, 0.1, 1.0],
-                             5.0,
-                             [center_x, center_y],
-                             [top_x, top_y],
-                             c.transform,
-                             g);
+                line_from_to(
+                    [0.1, 0.1, 0.1, 1.0],
+                    5.0,
+                    [center_x, center_y],
+                    [top_x, top_y],
+                    c.transform,
+                    g,
+                );
             });
             //
             thread::sleep(Duration::from_millis((1000.0 * self.dt) as u64));
