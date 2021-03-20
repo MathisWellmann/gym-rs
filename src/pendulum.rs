@@ -1,10 +1,8 @@
-use crate::{ActionType, GymEnv, Viewer};
-use piston_window::*;
+use crate::{scale, ActionType, GifRender, GymEnv};
+use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
-use std::thread;
-use std::time::Duration;
 
 /**
 Description:
@@ -33,6 +31,7 @@ pub struct PendulumEnv {
     g: f64,
     m: f64,
     l: f64,
+    step_count: usize,
 }
 
 impl Default for PendulumEnv {
@@ -46,6 +45,7 @@ impl Default for PendulumEnv {
             g: 10.0,
             m: 1.0,
             l: 1.0,
+            step_count: 0,
         }
     }
 }
@@ -93,6 +93,7 @@ impl GymEnv for PendulumEnv {
         }
 
         self.state = [new_theta, new_theta_dot];
+        self.step_count += 1;
 
         (self.get_obs(), -costs, false, None)
     }
@@ -106,32 +107,63 @@ impl GymEnv for PendulumEnv {
         self.get_obs()
     }
 
-    fn render(&self, viewer: &mut Viewer) {
-        let width: f64 = viewer.window_width as f64;
-        let height: f64 = viewer.window_height as f64;
-        if let Some(e) = viewer.window.next() {
-            viewer.window.draw_2d(&e, |c, g, _d| {
-                clear([0.5, 1.0, 0.5, 1.0], g);
+    fn render(&self, render: &mut GifRender) {
+        render.drawing_area.fill(&WHITE).unwrap();
 
-                let center_x: f64 = width / 2.0;
-                let center_y: f64 = height / 2.0;
-                let pole_len: f64 = (width / 4.0) * self.l;
-                let top_x: f64 = center_x + (-pole_len * -self.state[0].sin());
-                let top_y: f64 = center_y + (pole_len * -self.state[0].cos());
+        let mut chart = ChartBuilder::on(&render.drawing_area)
+            .caption(format!("Pendulum Environment"), ("sans-serif", 20))
+            .build_cartesian_2d(0.0..1.0, 0.0..1.0)
+            .unwrap();
 
-                // Draw pendulum
-                line_from_to(
-                    [0.1, 0.1, 0.1, 1.0],
-                    5.0,
-                    [center_x, center_y],
-                    [top_x, top_y],
-                    c.transform,
-                    g,
-                );
-            });
-            //
-            thread::sleep(Duration::from_millis((1000.0 * self.dt) as u64));
-        }
+        let pendulum_tip_x: f64 = 0.5 + self.state[0].sin() * 0.5;
+        let pendulum_tip_y: f64 = 0.5 + self.state[0].cos() * 0.5;
+        chart
+            .draw_series(LineSeries::new(
+                vec![(0.5, 0.5), (pendulum_tip_x, pendulum_tip_y)],
+                &RED,
+            ))
+            .unwrap();
+
+        // draw score
+        let style = TextStyle::from(("sans-serif", 20).into_font()).color(&RED);
+        render
+            .drawing_area
+            .draw_text(
+                &format!("step: {:.2}", self.step_count),
+                &style,
+                (
+                    scale(0.0, 1.0, 0.0, render.width as f64, 0.1) as i32,
+                    scale(0.0, 1.0, 0.0, render.height as f64, 0.9) as i32,
+                ),
+            )
+            .unwrap();
+
+        render.drawing_area.present().unwrap()
+
+        // let width: f64 = viewer.window_width as f64;
+        // let height: f64 = viewer.window_height as f64;
+        // if let Some(e) = viewer.window.next() {
+        //     viewer.window.draw_2d(&e, |c, g, _d| {
+        //         clear([0.5, 1.0, 0.5, 1.0], g);
+        //
+        //         let center_x: f64 = width / 2.0;
+        //         let center_y: f64 = height / 2.0;
+        //         let pole_len: f64 = (width / 4.0) * self.l;
+        //
+        //
+        //         // Draw pendulum
+        //         line_from_to(
+        //             [0.1, 0.1, 0.1, 1.0],
+        //             5.0,
+        //             [center_x, center_y],
+        //             [top_x, top_y],
+        //             c.transform,
+        //             g,
+        //         );
+        //     });
+        //     //
+        //     thread::sleep(Duration::from_millis((1000.0 * self.dt) as u64));
+        // }
     }
 
     fn seed(&mut self, seed: u64) {
@@ -148,7 +180,7 @@ mod tests {
     fn pendulum_render() {
         let mut env = PendulumEnv::default();
 
-        let mut viewer = Viewer::default();
+        let mut viewer = GifRender::default();
 
         let mut rng = thread_rng();
         let d = Uniform::new(-1.0, 1.0);

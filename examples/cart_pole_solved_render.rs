@@ -4,7 +4,7 @@ with a network in the form of a common genetic encoding (cge crate)
 */
 extern crate cge;
 
-use gym_rs::{ActionType, CartPoleEnv, GymEnv, Viewer};
+use gym_rs::{ActionType, CartPoleEnv, GifRender, GymEnv};
 
 fn main() {
     // load the network from file
@@ -12,14 +12,14 @@ fn main() {
 
     let mut env = CartPoleEnv::default();
 
-    let mut viewer = Viewer::new(1080, 1080);
+    let mut render = GifRender::new(540, 540, "img/cart_pole_solved_render.gif", 50).unwrap();
 
     let mut state: Vec<f64> = env.reset();
 
     let mut end: bool = false;
     let mut total_reward: f64 = 0.0;
     while !end {
-        if total_reward > 500.0 {
+        if total_reward > 200.0 {
             println!("SOLVED!");
             break;
         }
@@ -34,7 +34,7 @@ fn main() {
         state = s;
         total_reward += reward;
 
-        env.render(&mut viewer);
+        env.render(&mut render);
     }
     println!("total_reward: {}", total_reward);
 }

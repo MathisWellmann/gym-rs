@@ -1,12 +1,10 @@
 extern crate find_folder;
 
-use crate::{scale, ActionType, GymEnv, Viewer};
-use piston_window::*;
+use crate::{scale, ActionType, GifRender, GymEnv};
+use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
-use std::thread;
-use std::time::Duration;
 
 /*
 Description:
@@ -189,76 +187,65 @@ impl GymEnv for CartPoleEnv {
         self.state.to_vec()
     }
 
-    fn render(&self, viewer: &mut Viewer) {
-        if let Some(e) = viewer.window.next() {
-            let width: f64 = viewer.window_width as f64;
-            let track_y: f64 = 0.75 * viewer.window_height as f64;
-            let cart_x: f64 = scale(-2.4, 2.4, 0.0, viewer.window_width as f64, self.state[0]);
-            let cart_width: f64 = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.0833);
-            let cart_height: f64 = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.075);
+    fn render(&self, render: &mut GifRender) {
+        render.drawing_area.fill(&WHITE).unwrap();
 
-            // in original gym implementation pole_len gets multiplied by 2.0, but this renders it too long
-            let pole_len: f64 = (viewer.window_width as f64 / self.x_threshold * 2.0) * self.length;
+        let mut chart = ChartBuilder::on(&render.drawing_area)
+            .caption(format!("Cart Pole Environment"), ("sans-serif", 20))
+            .build_cartesian_2d(-2.4..2.4, 0_f64..1_f64)
+            .unwrap();
 
-            let pole_top_x: f64 = cart_x + (-pole_len * -self.state[2].sin());
-            let pole_top_y: f64 = track_y - (pole_len * -self.state[2].cos());
+        // draw track
+        let track_y = 0.25;
+        chart
+            .draw_series(LineSeries::new(
+                vec![(-2.4, track_y), (2.4, track_y)],
+                &BLACK,
+            ))
+            .unwrap();
 
-            let glyphs = &mut viewer.glyphs;
-            viewer.window.draw_2d(&e, |c, g, d| {
-                clear([0.5, 1.0, 0.5, 1.0], g);
-
-                // draw track
-                rectangle(
-                    [0.1, 0.1, 0.1, 1.0],        // color
-                    [0.0, track_y, width, 10.0], // [x, y, w, h]
-                    c.transform,
-                    g,
-                );
-
-                // draw cart
-                rectangle(
-                    [0.05, 0.05, 0.05, 1.0],
+        // draw cart
+        let cart_x: f64 = self.state[0];
+        let cart_width: f64 = 0.0833;
+        let cart_height: f64 = 0.075;
+        chart
+            .draw_series(vec![(0.0, 0.0)].iter().map(|_| {
+                Rectangle::new(
                     [
-                        cart_x - cart_width / 2.0,
-                        track_y - cart_height / 2.0,
-                        cart_width,
-                        cart_height,
+                        ((cart_x - cart_width), track_y),
+                        ((cart_x + cart_width), (track_y + cart_height)),
                     ],
-                    c.transform,
-                    g,
-                );
+                    HSLColor(0.8, 0.7, 0.1).filled(),
+                )
+            }))
+            .unwrap();
 
-                // draw pole
-                line(
-                    [0.859, 0.506, 0.0, 1.0],
-                    5.0,
-                    [
-                        cart_x,
-                        track_y,
-                        pole_top_x,
-                        track_y - (track_y - pole_top_y).abs(),
-                    ],
-                    c.transform,
-                    g,
-                );
+        // draw pole
+        let pole_angle: f64 = self.state[2];
+        let pole_top_x: f64 = cart_x + (pole_angle).sin() * self.length;
+        let pole_top_y: f64 = cart_height + track_y + (pole_angle).cos() * self.length;
+        chart
+            .draw_series(LineSeries::new(
+                vec![(cart_x, track_y + cart_height), (pole_top_x, pole_top_y)],
+                &RED,
+            ))
+            .unwrap();
 
-                // draw score
-                text::Text::new_color([0.0, 1.0, 0.0, 1.0], 32)
-                    .draw(
-                        &format!("SCORE: {}", self.score),
-                        glyphs,
-                        &c.draw_state,
-                        c.transform,
-                        g,
-                    )
-                    .unwrap();
+        // draw score
+        let style = TextStyle::from(("sans-serif", 20).into_font()).color(&RED);
+        render
+            .drawing_area
+            .draw_text(
+                &format!("Score: {}", self.score),
+                &style,
+                (
+                    scale(0.0, 1.0, 0.0, render.width as f64, 0.1) as i32,
+                    scale(0.0, 1.0, 0.0, render.height as f64, 0.9) as i32,
+                ),
+            )
+            .unwrap();
 
-                // update glyphs before rendering
-                glyphs.factory.encoder.flush(d);
-            });
-
-            thread::sleep(Duration::from_millis((self.tau * 1000.0) as u64));
-        }
+        render.drawing_area.present().unwrap()
     }
 
     fn seed(&mut self, seed: u64) {

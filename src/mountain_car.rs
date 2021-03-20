@@ -1,11 +1,8 @@
-use crate::utils::scale;
-use crate::{ActionType, GymEnv, Viewer};
-use piston_window::*;
+use crate::{scale, ActionType, GifRender, GymEnv};
+use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
-use std::thread;
-use std::time::Duration;
 
 /**
 Description:
@@ -60,6 +57,7 @@ pub struct MountainCarEnv {
     gravity: f64,
     state: [f64; 2],
     episode_length: usize,
+    score: f64,
 }
 
 impl MountainCarEnv {
@@ -82,6 +80,7 @@ impl Default for MountainCarEnv {
             gravity: 0.0025,
             state: [0.0; 2],
             episode_length: 0,
+            score: 0.0,
         }
     }
 }
@@ -125,6 +124,7 @@ impl GymEnv for MountainCarEnv {
 
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
         let reward: f64 = -1.0;
+        self.score += reward;
 
         self.state = [position, velocity];
         self.episode_length += 1;
@@ -139,72 +139,66 @@ impl GymEnv for MountainCarEnv {
     }
 
     /// render the environment using 30 frames per second
-    fn render(&self, viewer: &mut Viewer) {
-        if let Some(e) = viewer.window.next() {
-            let cart_width = scale(0.0, 1.0, 0.0, viewer.window_width as f64, 0.066);
-            let cart_height = scale(0.0, 1.0, 0.0, viewer.window_height as f64, 0.05);
-            let width = viewer.window_width as f64;
-            let height = viewer.window_height as f64;
+    fn render(&self, render: &mut GifRender) {
+        render.drawing_area.fill(&WHITE).unwrap();
 
-            viewer.window.draw_2d(&e, |c, g, _d| {
-                clear([0.5, 1.0, 0.5, 1.0], g);
+        let mut chart = ChartBuilder::on(&render.drawing_area)
+            .caption(format!("Mountain Car Environment"), ("sans-serif", 20))
+            .build_cartesian_2d(-1.2..0.6, 0.0..1.0)
+            .unwrap();
 
-                // draw track
-                let xs: Vec<f64> = (0..100)
-                    .map(|i| {
-                        scale::<f64>(0.0, 100.0, self.min_position, self.max_position, i as f64)
+        // draw track
+        chart
+            .draw_series(LineSeries::new(
+                (0..render.width)
+                    .map(|x| {
+                        scale(
+                            0.0,
+                            render.width as f64,
+                            self.min_position,
+                            self.max_position,
+                            x as f64,
+                        )
                     })
-                    .collect::<Vec<f64>>();
-                let ys: Vec<f64> = xs.iter().map(|v| (3.0 * v).sin() * 0.45 + 0.55).collect();
-                let xys: Vec<[f64; 2]> = xs
-                    .iter()
-                    .zip(&ys)
-                    .map(|(x, y)| {
-                        let x_scaled: f64 =
-                            scale(self.min_position, self.max_position, 0.0, width, *x);
-                        let y_scaled: f64 = height - scale(0.0, 1.0, 0.0, height, *y);
-                        [x_scaled, y_scaled]
-                    })
-                    .collect();
-                // Draw path one line at a time
-                for (i, xy) in xys.iter().enumerate() {
-                    if i == 0 {
-                        continue;
-                    }
-                    line_from_to([0.0, 0.0, 0.0, 1.0], 1.0, *xy, xys[i - 1], c.transform, g);
-                }
+                    .map(|x| (x, (3.0 * x).sin() * 0.45 + 0.55)),
+                &RED,
+            ))
+            .unwrap();
 
-                // draw cart
-                let cart_x: f64 = scale(-1.2, 0.6, 0.0, width, self.state[0]);
-                let cart_y: f64 = height
-                    - scale(
-                        0.0,
-                        1.0,
-                        0.0,
-                        height,
-                        (3.0 * self.state[0]).sin() * 0.45 + 0.55,
-                    ); // TODO: map to curve
-                rectangle(
-                    [0.1, 0.1, 0.1, 1.0],
+        // draw cart
+        let cart_x: f64 = self.state[0];
+        let track_y: f64 = (3.0 * cart_x).sin() * 0.45 + 0.55;
+        let cart_width = 0.066;
+        let cart_height = 0.05;
+        chart
+            .draw_series(vec![(0.0, 0.0)].iter().map(|_| {
+                Rectangle::new(
                     [
-                        cart_x - cart_width / 2.0,
-                        cart_y - cart_height / 2.0,
-                        cart_width,
-                        cart_height,
+                        ((cart_x - cart_width), track_y),
+                        ((cart_x + cart_width), (track_y + cart_height)),
                     ],
-                    c.transform,
-                    g,
-                );
+                    HSLColor(0.8, 0.7, 0.1).filled(),
+                )
+            }))
+            .unwrap();
 
-                // TODO: rotate cart body depending on hill angle
+        // TODO: draw finish line
 
-                // TODO: draw finish
+        // draw score
+        let style = TextStyle::from(("sans-serif", 20).into_font()).color(&RED);
+        render
+            .drawing_area
+            .draw_text(
+                &format!("Score: {}", self.score),
+                &style,
+                (
+                    scale(0.0, 1.0, 0.0, render.width as f64, 0.1) as i32,
+                    scale(0.0, 1.0, 0.0, render.height as f64, 0.9) as i32,
+                ),
+            )
+            .unwrap();
 
-                // TODO: draw wheels
-            });
-            // run at ~30 frames per second
-            thread::sleep(Duration::from_millis(33));
-        }
+        render.drawing_area.present().unwrap()
     }
 
     fn seed(&mut self, seed: u64) {

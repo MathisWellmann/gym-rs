@@ -9,17 +9,19 @@ This will make the use of Python unnecessary which is awesome.
 If you don't mind Python and would like to use the original implementation from Rust,
  check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
 
+### Demonstration
+![cart_pole](img/cart_pole_solved_render.gif)
+
+![mountain_car](img/mountain_car_render.gif)
+
+![pendulum](img/pendulum_render.gif)
+
 ### How to use
 To use this crate in your project, put this in your Cargo.toml:
 
 ```toml
 gym_rs = { git = "https://www.github.com/MathisWellmann/gym-rs" }
 ```
-
-If you want to render the environment like in the example below,
-copy the folder "font" into your crates root directory just like in this repository, 
-so that the window rendering can find the font. Otherwise rendering will panic as it cannot find the anon.ttf file.
-TODO: would be nice to not rely on a font file but rather integrate it into Viewer.
 
 ### Environments
 - Cart Pole (discrete action)
@@ -37,7 +39,7 @@ with a network in the form of a common genetic encoding (cge crate)
 */
 extern crate cge;
 
-use gym_rs::{CartPoleEnv, GymEnv, ActionType, Viewer};
+use gym_rs::{ActionType, CartPoleEnv, GymEnv, GifRender};
 
 fn main() {
     // load the network from file
@@ -45,7 +47,12 @@ fn main() {
 
     let mut env = CartPoleEnv::default();
 
-    let mut viewer = Viewer::new(1080, 1080);
+    let mut viewer = GifRender::new(
+        540,
+        540,
+        "img/cart_pole_solved_render.gif",
+            50
+    ).unwrap();
 
     let mut state: Vec<f64> = env.reset();
 
@@ -82,12 +89,10 @@ See [examples](https://github.com/MathisWellmann/gym-rs/tree/master/examples) fo
 
 ### TODOs:
 - implement more environments
-- extensive documentation
 - compare performance to gym-rs python wrapper
 - make generic implementation and compare f32 vs f64 performance.
 - publish on crates.io
-- make piston_window dependency optional by introducing a render feature if possible
-- remove the need for a font file
+- introduce gif render style, so that black themed output is possible
 
 ### Contributions are welcome!
 If you would like to add an environment or a feature, please fork this repository and create a pull request 

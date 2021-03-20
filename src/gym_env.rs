@@ -1,4 +1,4 @@
-use crate::{ActionType, Viewer};
+use crate::{ActionType, GifRender};
 
 /// The trait which defines the needed methods an environment needs to provide
 pub trait GymEnv {
@@ -22,7 +22,7 @@ pub trait GymEnv {
     fn reset(&mut self) -> Vec<f64>;
 
     /// Render the environment
-    fn render(&self, viewer: &mut Viewer);
+    fn render(&self, viewer: &mut GifRender);
 
     /// Set the seed for this environments random number generator
     fn seed(&mut self, seed: u64);

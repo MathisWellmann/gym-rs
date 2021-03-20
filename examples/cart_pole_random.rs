@@ -3,7 +3,7 @@ Cart Pole Environment using random actions
 without rendering of the environment
 */
 
-use gym_rs::{ActionType, CartPoleEnv, GymEnv, Viewer};
+use gym_rs::{ActionType, CartPoleEnv, GifRender, GymEnv};
 use rand::{thread_rng, Rng};
 
 fn main() {

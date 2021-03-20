@@ -1,10 +1,28 @@
 [package]
 name = "gym-rs"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["MathisWellmann <wellmannmathis@gmail.com>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license-file = "LICENSE"
+description = "OpenAI's Gym written in pure Rust"
+repository = "https://github.com/MathisWellmann/gym-rs"
+readme = "README.md"
+keywords = [
+    "reinforcement learning",
+    "ai",
+    "ml",
+    "physical",
+    "environment",
+    "benchmark",
+]
+categories = [
+    "simulation",
+    "science",
+    "algorithms",
+]
+exclude = [
+    "img/"
+]
 
 [dependencies]
 rand = "^0.7.3"
@@ -12,7 +30,8 @@ rand_pcg = "0.2.1"
 log = "0.4.11"
 num = "0.3.0"
 find_folder = "0.3.0"
-piston_window = "0.116.0"
+failure = "0.1.8"
+plotters = "0.3.0"
 
 cge = { git = "https://github.com/pengowen123/cge", optional = true }
 
