@@ -20,8 +20,9 @@ Observation
     2       pendulum velocity   -Inf    Inf
 
 Actions:
-
+    Continuous action in range [-max_torque, max_torque] = [-2.0, 2.0]
 **/
+#[derive(Debug)]
 pub struct PendulumEnv {
     rng: Pcg64,
     state: [f64; 2],
@@ -82,7 +83,7 @@ impl GymEnv for PendulumEnv {
 
         let mut new_theta_dot: f64 = theta_dot
             + (-3.0 * self.g / (2.0 * self.l) * (theta + std::f64::consts::PI).sin()
-                + 2.0 / (self.m * self.l.powi(2)) * u)
+                + 3.0 / (self.m * self.l.powi(2)) * u)
                 * self.dt;
         let new_theta = theta + new_theta_dot * self.dt;
         // clip new_theta_dot to max speed
@@ -139,31 +140,6 @@ impl GymEnv for PendulumEnv {
             .unwrap();
 
         render.drawing_area.present().unwrap()
-
-        // let width: f64 = viewer.window_width as f64;
-        // let height: f64 = viewer.window_height as f64;
-        // if let Some(e) = viewer.window.next() {
-        //     viewer.window.draw_2d(&e, |c, g, _d| {
-        //         clear([0.5, 1.0, 0.5, 1.0], g);
-        //
-        //         let center_x: f64 = width / 2.0;
-        //         let center_y: f64 = height / 2.0;
-        //         let pole_len: f64 = (width / 4.0) * self.l;
-        //
-        //
-        //         // Draw pendulum
-        //         line_from_to(
-        //             [0.1, 0.1, 0.1, 1.0],
-        //             5.0,
-        //             [center_x, center_y],
-        //             [top_x, top_y],
-        //             c.transform,
-        //             g,
-        //         );
-        //     });
-        //     //
-        //     thread::sleep(Duration::from_millis((1000.0 * self.dt) as u64));
-        // }
     }
 
     fn seed(&mut self, seed: u64) {

@@ -6,7 +6,7 @@ use rand::distributions::Uniform;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
 
-/*
+/**
 Description:
     A pole is attached by an un-actuated joint to a cart, which moves along
     a frictionless track. The pendulum starts upright, and the goal is to
@@ -51,9 +51,8 @@ Starting State:
     Solved Requirements:
     Considered solved when the average return is greater than or equal to
     195.0 over 100 consecutive trials.
-*/
+**/
 #[derive(Debug)]
-/// The cart pole environment
 pub struct CartPoleEnv {
     gravity: f64,
     mass_cart: f64,

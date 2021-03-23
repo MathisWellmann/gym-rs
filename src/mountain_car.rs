@@ -46,6 +46,7 @@ Episode Termination:
     The car position is more than 0.5
     Episode length is greater than 200
 **/
+#[derive(Debug)]
 pub struct MountainCarEnv {
     rng: Pcg64,
     min_position: f64,
