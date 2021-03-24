@@ -146,25 +146,3 @@ impl GymEnv for PendulumEnv {
         self.rng = Pcg64::seed_from_u64(seed);
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use rand::thread_rng;
-
-    #[test]
-    fn pendulum_render() {
-        let mut env = PendulumEnv::default();
-
-        let mut viewer = GifRender::default();
-
-        let mut rng = thread_rng();
-        let d = Uniform::new(-1.0, 1.0);
-        for i in 0..200 {
-            let action = ActionType::Continuous(vec![rng.sample(d)]);
-            env.step(action);
-
-            env.render(&mut viewer);
-        }
-    }
-}

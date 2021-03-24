@@ -32,15 +32,3 @@ num = "0.3.0"
 find_folder = "0.3.0"
 failure = "0.1.8"
 plotters = "0.3.0"
-
-cge = { git = "https://github.com/pengowen123/cge", optional = true }
-
-[[example]]
-name = "cart_pole_random"
-
-[[example]]
-name = "cart_pole_random_render"
-
-[[example]]
-name = "cart_pole_solved_render"
-required-features = ["cge"]
