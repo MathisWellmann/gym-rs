@@ -8,7 +8,7 @@ description = "OpenAI's Gym written in pure Rust"
 repository = "https://github.com/MathisWellmann/gym-rs"
 readme = "README.md"
 keywords = [
-    "reinforcement learning",
+    "rl",
     "ai",
     "ml",
     "physical",
