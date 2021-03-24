@@ -27,7 +27,18 @@ exclude = [
 rand = "^0.7.3"
 rand_pcg = "0.2.1"
 log = "0.4.11"
+pretty_env_logger = "0.4.0"
 num = "0.3.0"
 find_folder = "0.3.0"
 failure = "0.1.8"
 plotters = "0.3.0"
+
+cosyne = { version = "0.3.2", optional = true }
+
+[[example]]
+name = "cart_pole"
+required-features = ["cosyne"]
+
+[[example]]
+name = "pendulum"
+required-features = ["cosyne"]

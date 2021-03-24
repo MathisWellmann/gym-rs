@@ -10,17 +10,17 @@ If you don't mind Python and would like to use the original implementation from 
  check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
 
 ### Demonstration
-![cart_pole](img/cart_pole_solved_render.gif)
+![cart_pole](img/cart_pole_champion.gif)
 
 ![mountain_car](img/mountain_car_render.gif)
 
-![pendulum](img/pendulum_render.gif)
+![pendulum](img/pendulum_champion.gif)
 
 ### How to use
 To use this crate in your project, put this in your Cargo.toml:
 
 ```toml
-gym_rs = { git = "https://www.github.com/MathisWellmann/gym-rs" }
+gym_rs = "0.2.1"
 ```
 
 ### Environments
@@ -30,62 +30,13 @@ gym_rs = { git = "https://www.github.com/MathisWellmann/gym-rs" }
 - Pendulum (continuous action)
 
 ### Example
-Here is how you can use the cart_pole environment with a trained neural network agent from a file 
-using the common genetic encoding ([cge](https://www.github.com/MathisWellmann/cge))  and rendering enabled:
-```rust
-/*
-Cart Pole Environment solved using Neat
-with a network in the form of a common genetic encoding (cge crate)
-*/
-extern crate cge;
+Check out [examples](examples/) folder, which shows how to solve cart_pole using [cosyne](https://github.com/MathisWellmann/cosyne)
 
-use gym_rs::{ActionType, CartPoleEnv, GymEnv, GifRender};
-
-fn main() {
-    // load the network from file
-    let mut net = cge::Network::load_from_file("./examples/gym_cart_pole_champion.cge").unwrap();
-
-    let mut env = CartPoleEnv::default();
-
-    let mut viewer = GifRender::new(
-        540,
-        540,
-        "img/cart_pole_solved_render.gif",
-            50
-    ).unwrap();
-
-    let mut state: Vec<f64> = env.reset();
-
-    let mut end: bool = false;
-    let mut total_reward: f64 = 0.0;
-    while !end {
-        if total_reward > 200.0 {
-            println!("SOLVED!");
-            break;
-        }
-        let output = net.evaluate(&state);
-        let action: ActionType = if output[0] < 0.0 {
-            ActionType::Discrete(0)
-        } else {
-            ActionType::Discrete(1)
-        };
-        let (s, reward, done, _info) = env.step(action);
-        end = done;
-        state = s;
-        total_reward += reward;
-
-        env.render(&mut viewer);
-    }
-    println!("total_reward: {}", total_reward);
-}
+Run examples it with:
 ```
-
-Run it with:
+RUST_LOG=info cargo run --example cart_pole --release --features="cosyne"
+RUST_LOG=info cargo run --example pendulum --release --features="cosyne"
 ```
-cargo run --release --example cart_pole_solved_render --features="cge"
-```
-
-See [examples](https://github.com/MathisWellmann/gym-rs/tree/master/examples) folder for all the examples
 
 ### TODOs:
 - implement more environments
