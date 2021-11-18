@@ -1,7 +1,5 @@
 # OpenAI Gym written in pure Rust for blazingly fast performance :rocket:
 
-:warning: :construction: Work in Progress :construction:
-
 This library aims be be as close to the original OpenAI Gym library which is written in Python
 and translate it into Rust for blazingly fast performance.
 This will make the use of Python unnecessary which is awesome.
