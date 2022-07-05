@@ -1,5 +1,4 @@
 use crate::utils::Float;
-use crate::utils::Float;
 use crate::{scale, spaces, ActionType, GifRender, GymEnv};
 use ordered_float::OrderedFloat;
 use plotters::prelude::*;
@@ -51,7 +50,10 @@ Episode Termination:
 **/
 
 #[derive(Debug)]
-pub struct MountainCarEnv<T> {
+pub struct MountainCarEnv<T, ActionType>
+where
+    T: num::Float,
+{
     pub min_position: Float<T>,
     pub max_position: Float<T>,
     pub max_speed: Float<T>,
@@ -67,16 +69,35 @@ pub struct MountainCarEnv<T> {
     // TODO: Add properties related to rendering such screen_width, screen_height, etc..
     // REFER TO: https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
     pub state: Observation<T>,
-    pub action_space: spaces::Discrete,
+    pub action_space: ActionType,
     pub observation_space: spaces::Box<Observation<T>>,
 
+    /// RANDOM NUMBER GENERATOR
     rng: Pcg64,
 }
 
 // Utility structure intended to reduce confusion around meaning of properties.
-pub struct Observation<T>(Float<T>, Float<T>);
+#[derive(Debug)]
+pub struct Observation<T>(Float<T>, Float<T>)
+where
+    T: num::Float;
 
-impl<T> Observation<T> {
+impl Default for Observation<f32> {
+    fn default() -> Self {
+        Observation(0., 0.)
+    }
+}
+
+impl Default for Observation<f64> {
+    fn default() -> Self {
+        Observation(0., 0.)
+    }
+}
+
+impl<T> Observation<T>
+where
+    T: num::Float,
+{
     pub fn get_position(&self) -> Float<T> {
         self.0
     }
@@ -86,23 +107,64 @@ impl<T> Observation<T> {
     }
 }
 
-impl<T> MountainCarEnv<T> {
-    fn new(render_mode: Option<&str>, goal_velocity: Option<Float<T>>) {
+impl<T> MountainCarEnv<T>
+where
+    T: num::Float,
+{
+    fn new(render_mode: Option<&str>, goal_velocity: Option<Float<T>>) -> Self {
         let rng = Pcg64::from_entropy();
+
         let min_position = -1.2;
         let max_position = 0.6;
         let max_speed = 0.07;
         let goal_position = 0.5;
-        let goal_velocity = 0.0;
+        let goal_velocity = goal_velocity.unwrap_or(OrderedFloat(0.));
+
         let force = 0.001;
         let gravity = 0.0025;
-        let state = [0.0; 2];
+
+        let low = Observation(min_position, -max_speed);
+        let high = Observation(max_position, max_speed);
+
+        // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
+        // loaded via function (the later would deviate more from the current interface, so we
+        // shouldn't use it).
+        let state = Observation::default();
+
+        // TODO: Add screen specific properties later.
+
         let action_space = spaces::Discrete(3);
+        let observation_space = spaces::Box(low, high);
+
+        Self {
+            min_position,
+            max_position,
+            max_speed,
+            goal_position,
+            goal_velocity,
+
+            force,
+            gravity,
+
+            low,
+            high,
+
+            action_space,
+            observation_space,
+
+            state,
+            rng,
+        }
     }
 }
 
-impl GymEnv for MountainCarEnv {
-    fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
+impl<T, A> GymEnv for MountainCarEnv<T, A>
+where
+    T: num::Float,
+{
+    type ActionType = A;
+
+    fn step(&mut self, action: Self::ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
         let action: f64 = match action {
             ActionType::Discrete(a) => a as f64 - 1.0,
             ActionType::Continuous(a) => {
