@@ -5,10 +5,10 @@
 #[macro_use]
 extern crate log;
 
-mod action_type;
 mod cart_pole;
+pub mod core;
+pub mod envs;
 mod gif_render;
-mod gym_env;
 mod mountain_car;
 mod pendulum;
 pub mod spaces;
