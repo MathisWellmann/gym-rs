@@ -1,4 +1,4 @@
-use crate::{scale, ActionType, GifRender, GymEnv};
+use crate::{scale, GifRender};
 use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
