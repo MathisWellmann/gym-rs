@@ -11,6 +11,7 @@ mod gif_render;
 mod gym_env;
 mod mountain_car;
 mod pendulum;
+pub mod spaces;
 mod utils;
 
 pub use action_type::ActionType;

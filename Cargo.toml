@@ -35,6 +35,8 @@ plotters = "0.3.0"
 
 cosyne = { version = "0.3.2", optional = true }
 
+ordered-float = { version = "3.0", features = ["rand"]}
+
 [[example]]
 name = "cart_pole"
 required-features = ["cosyne"]

@@ -1,4 +1,7 @@
-use crate::{scale, ActionType, GifRender, GymEnv};
+use crate::utils::Float;
+use crate::utils::Float;
+use crate::{scale, spaces, ActionType, GifRender, GymEnv};
+use ordered_float::OrderedFloat;
 use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
@@ -46,43 +49,55 @@ Episode Termination:
     The car position is more than 0.5
     Episode length is greater than 200
 **/
+
 #[derive(Debug)]
-pub struct MountainCarEnv {
+pub struct MountainCarEnv<T> {
+    pub min_position: Float<T>,
+    pub max_position: Float<T>,
+    pub max_speed: Float<T>,
+    pub goal_position: Float<T>,
+    pub goal_velocity: Float<T>,
+
+    pub force: Float<T>,
+    pub gravity: Float<T>,
+
+    pub low: Observation<T>,
+    pub high: Observation<T>,
+
+    // TODO: Add properties related to rendering such screen_width, screen_height, etc..
+    // REFER TO: https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
+    pub state: Observation<T>,
+    pub action_space: spaces::Discrete,
+    pub observation_space: spaces::Box<Observation<T>>,
+
     rng: Pcg64,
-    min_position: f64,
-    max_position: f64,
-    max_speed: f64,
-    goal_position: f64,
-    goal_velocity: f64,
-    force: f64,
-    gravity: f64,
-    state: [f64; 2],
-    episode_length: usize,
-    score: f64,
 }
 
-impl MountainCarEnv {
-    /// Return the current length of the episode, which increases with each step
-    pub fn episode_length(&self) -> usize {
-        self.episode_length
+// Utility structure intended to reduce confusion around meaning of properties.
+pub struct Observation<T>(Float<T>, Float<T>);
+
+impl<T> Observation<T> {
+    pub fn get_position(&self) -> Float<T> {
+        self.0
+    }
+
+    pub fn get_velocity(&self) -> Float<T> {
+        self.1
     }
 }
 
-impl Default for MountainCarEnv {
-    fn default() -> Self {
-        Self {
-            rng: Pcg64::from_entropy(),
-            min_position: -1.2,
-            max_position: 0.6,
-            max_speed: 0.07,
-            goal_position: 0.5,
-            goal_velocity: 0.0,
-            force: 0.001,
-            gravity: 0.0025,
-            state: [0.0; 2],
-            episode_length: 0,
-            score: 0.0,
-        }
+impl<T> MountainCarEnv<T> {
+    fn new(render_mode: Option<&str>, goal_velocity: Option<Float<T>>) {
+        let rng = Pcg64::from_entropy();
+        let min_position = -1.2;
+        let max_position = 0.6;
+        let max_speed = 0.07;
+        let goal_position = 0.5;
+        let goal_velocity = 0.0;
+        let force = 0.001;
+        let gravity = 0.0025;
+        let state = [0.0; 2];
+        let action_space = spaces::Discrete(3);
     }
 }
 
