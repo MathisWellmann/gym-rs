@@ -9,7 +9,7 @@ extern crate log;
 // mod cart_pole;
 pub mod core;
 pub mod envs;
+pub mod utils;
 // mod gif_render;
 // mod pendulum;
 pub mod spaces;
-mod utils;
