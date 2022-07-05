@@ -1,1 +1,1 @@
-pub mod classic_control;
+pub mod classical_control;

@@ -1,5 +1,6 @@
-use crate::core::GymEnv;
-use crate::{scale, spaces, utils, GifRender};
+use crate::core::{GymEnv, RenderMode};
+use crate::utils::scale;
+use crate::{spaces, utils};
 use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
@@ -62,12 +63,18 @@ pub struct MountainCarEnv {
     pub low: Observation,
     pub high: Observation,
 
-    // TODO: Add properties related to rendering such screen_width, screen_height, etc..
-    // REFER TO: https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
-    pub state: Observation,
+    // NOTE: Consider using SDL2 to reduce differences between gym_rs and the python implementation.
+    pub screen_width: usize,
+    pub screen_height: usize,
+    pub screen: Option<f32>,
+    // number of episodes
+    pub clock: usize,
+    pub isopen: bool,
+
     pub action_space: spaces::Discrete,
     pub observation_space: spaces::Box<Observation>,
 
+    pub state: Observation,
     /// RANDOM NUMBER GENERATOR
     rng: Pcg64,
 }
@@ -97,9 +104,9 @@ impl Observation {
     }
 }
 
-impl<T> From<Observation> for Vec<f64> {
+impl From<Observation> for Vec<f64> {
     fn from(observation: Observation) -> Self {
-        vec![observation.0, observation.1];
+        vec![observation.0, observation.1]
     }
 }
 
@@ -119,12 +126,17 @@ impl MountainCarEnv {
         let low = Observation(min_position, -max_speed);
         let high = Observation(max_position, max_speed);
 
+        let render_mode = "";
+        let renderer = "";
+
         // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
         // loaded via function (the later would deviate more from the current interface, so we
         // shouldn't use it).
         let state = Observation::default();
 
-        // TODO: Add screen specific properties later.
+        let clock = 0;
+        let screen_width = 600;
+        let screen_height = 400;
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::Box(low, high);
@@ -147,14 +159,20 @@ impl MountainCarEnv {
 
             state,
             rng,
+
+            screen_width,
+            screen_height,
+            clock,
+            screen: todo!(),
+            isopen: todo!(),
         }
     }
 }
 
-impl<A> GymEnv for MountainCarEnv<A> {
-    type ActionType = A;
+impl GymEnv for MountainCarEnv {
+    type Action = usize;
 
-    fn step(&mut self, action: usize) -> (Vec<f64>, f64, bool, Option<String>) {
+    fn step(&mut self, action: Self::Action) -> (Vec<f64>, f64, bool, Option<String>) {
         assert!(
             self.action_space.contains(action),
             "{} (usize) invalid",
@@ -164,7 +182,7 @@ impl<A> GymEnv for MountainCarEnv<A> {
         let mut position = self.state.get_position();
         let mut velocity = self.state.get_velocity();
 
-        velocity += (action - 1) * self.force + (3.0 * position).cos() * (-self.gravity);
+        velocity += (action - 1) as f64 * self.force + (3.0 * position).cos() * (-self.gravity);
         velocity = utils::clip(velocity, -self.max_speed, self.max_speed);
 
         position += velocity;
@@ -177,12 +195,9 @@ impl<A> GymEnv for MountainCarEnv<A> {
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
         let reward: f64 = -1.0;
 
-        self.score += reward;
-
         self.state.update(position, velocity);
-        self.episode_length += 1;
 
-        (self.state.to_vec(), reward, done, None)
+        (self.state.into(), reward, done, None)
     }
 
     fn reset(&mut self) -> Vec<f64> {
@@ -192,67 +207,7 @@ impl<A> GymEnv for MountainCarEnv<A> {
     }
 
     /// render the environment using 30 frames per second
-    fn render(&self, render: &mut GifRender) {
-        render.drawing_area.fill(&WHITE).unwrap();
-
-        let mut chart = ChartBuilder::on(&render.drawing_area)
-            .caption(format!("Mountain Car Environment"), ("sans-serif", 20))
-            .build_cartesian_2d(-1.2..0.6, 0.0..1.0)
-            .unwrap();
-
-        // draw track
-        chart
-            .draw_series(LineSeries::new(
-                (0..render.width)
-                    .map(|x| {
-                        scale(
-                            0.0,
-                            render.width as f64,
-                            self.min_position,
-                            self.max_position,
-                            x as f64,
-                        )
-                    })
-                    .map(|x| (x, (3.0 * x).sin() * 0.45 + 0.55)),
-                &RED,
-            ))
-            .unwrap();
-
-        // draw cart
-        let cart_x: f64 = self.state[0];
-        let track_y: f64 = (3.0 * cart_x).sin() * 0.45 + 0.55;
-        let cart_width = 0.066;
-        let cart_height = 0.05;
-        chart
-            .draw_series(vec![(0.0, 0.0)].iter().map(|_| {
-                Rectangle::new(
-                    [
-                        ((cart_x - cart_width), track_y),
-                        ((cart_x + cart_width), (track_y + cart_height)),
-                    ],
-                    HSLColor(0.8, 0.7, 0.1).filled(),
-                )
-            }))
-            .unwrap();
-
-        // TODO: draw finish line
-
-        // draw score
-        let style = TextStyle::from(("sans-serif", 20).into_font()).color(&RED);
-        render
-            .drawing_area
-            .draw_text(
-                &format!("Score: {}", self.score),
-                &style,
-                (
-                    scale(0.0, 1.0, 0.0, render.width as f64, 0.1) as i32,
-                    scale(0.0, 1.0, 0.0, render.height as f64, 0.9) as i32,
-                ),
-            )
-            .unwrap();
-
-        render.drawing_area.present().unwrap()
-    }
+    fn render(&self, mode: RenderMode) {}
 
     fn seed(&mut self, seed: u64) {
         self.rng = Pcg64::seed_from_u64(seed);

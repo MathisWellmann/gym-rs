@@ -1,8 +1,12 @@
-use crate::{scale, GifRender};
 use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
+
+use crate::action_type::{self, ActionType};
+use crate::core::GymEnv;
+use crate::gif_render::GifRender;
+use crate::utils::scale;
 
 /**
 Description:
@@ -62,6 +66,8 @@ impl PendulumEnv {
 }
 
 impl GymEnv for PendulumEnv {
+    type Action = action_type::ActionType;
+
     fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
         let mut u = match action {
             ActionType::Discrete(_) => panic!("discrete action is not supported for the pendulum environment! Please use continuous actions"),

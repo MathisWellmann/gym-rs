@@ -4,7 +4,7 @@ pub fn scale<T: num::Float>(from_min: T, from_max: T, to_min: T, to_max: T, valu
     to_min + ((value - from_min) * (to_max - to_min)) / (from_max - from_min)
 }
 
-pub fn clip<T: PartialEq>(value: T, left_bound: T, right_bound: T) -> T {
+pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) -> T {
     if left_bound <= value && value <= right_bound {
         value
     } else if value > right_bound {

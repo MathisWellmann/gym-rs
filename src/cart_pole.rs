@@ -1,10 +1,14 @@
 extern crate find_folder;
 
-use crate::{scale, ActionType, GifRender, GymEnv};
 use plotters::prelude::*;
 use rand::distributions::Uniform;
 use rand::prelude::*;
 use rand_pcg::Pcg64;
+
+use crate::action_type::{self, ActionType};
+use crate::core::GymEnv;
+use crate::gif_render::GifRender;
+use crate::utils::scale;
 
 /**
 Description:
@@ -105,7 +109,9 @@ impl Default for CartPoleEnv {
 }
 
 impl GymEnv for CartPoleEnv {
-    fn step(&mut self, action: ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
+    type Action = ActionType;
+
+    fn step(&mut self, action: Self::Action) -> (Vec<f64>, f64, bool, Option<String>) {
         let action = match action {
             ActionType::Discrete(v) => v,
             ActionType::Continuous(_) => panic!("wrong action type provided"),

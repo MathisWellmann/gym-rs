@@ -34,8 +34,7 @@ failure = "0.1.8"
 plotters = "0.3.0"
 
 cosyne = { version = "0.3.2", optional = true }
-
-ordered-float = { version = "3.0", features = ["rand"]}
+sdl2 = "0.35"
 
 [[example]]
 name = "cart_pole"

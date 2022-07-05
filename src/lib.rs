@@ -5,15 +5,11 @@
 #[macro_use]
 extern crate log;
 
-mod cart_pole;
+// mod action_type;
+// mod cart_pole;
 pub mod core;
 pub mod envs;
-mod gif_render;
-mod pendulum;
+// mod gif_render;
+// mod pendulum;
 pub mod spaces;
 mod utils;
-
-pub use cart_pole::CartPoleEnv;
-pub use gif_render::GifRender;
-pub use pendulum::PendulumEnv;
-pub use utils::scale;

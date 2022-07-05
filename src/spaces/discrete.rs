@@ -1,8 +1,8 @@
 #[derive(Debug)]
-pub struct Discrete(pub u8);
+pub struct Discrete(pub usize);
 
 impl Discrete {
-    pub fn contains(&self, value: u8) -> bool {
+    pub fn contains(&self, value: usize) -> bool {
         value < self.0
     }
 }
