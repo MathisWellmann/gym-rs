@@ -1,4 +1,4 @@
-use crate::{ActionType, GifRender};
+use crate::GifRender;
 
 /// The trait which defines the needed methods an environment needs to provide
 pub trait GymEnv {

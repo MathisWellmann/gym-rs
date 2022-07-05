@@ -50,75 +50,59 @@ Episode Termination:
 **/
 
 #[derive(Debug)]
-pub struct MountainCarEnv<T, ActionType>
-where
-    T: num::Float,
-{
-    pub min_position: Float<T>,
-    pub max_position: Float<T>,
-    pub max_speed: Float<T>,
-    pub goal_position: Float<T>,
-    pub goal_velocity: Float<T>,
+pub struct MountainCarEnv<ActionSpace> {
+    pub min_position: Float<f64>,
+    pub max_position: Float<f64>,
+    pub max_speed: Float<f64>,
+    pub goal_position: Float<f64>,
+    pub goal_velocity: Float<f64>,
 
-    pub force: Float<T>,
-    pub gravity: Float<T>,
+    pub force: Float<f64>,
+    pub gravity: Float<f64>,
 
-    pub low: Observation<T>,
-    pub high: Observation<T>,
+    pub low: Observation,
+    pub high: Observation,
 
     // TODO: Add properties related to rendering such screen_width, screen_height, etc..
     // REFER TO: https://github.com/openai/gym/blob/master/gym/envs/classic_control/mountain_car.py
-    pub state: Observation<T>,
-    pub action_space: ActionType,
-    pub observation_space: spaces::Box<Observation<T>>,
+    pub state: Observation,
+    pub action_space: ActionSpace,
+    pub observation_space: spaces::Box<Observation>,
 
     /// RANDOM NUMBER GENERATOR
     rng: Pcg64,
 }
 
+pub type Float<T> = T;
 // Utility structure intended to reduce confusion around meaning of properties.
 #[derive(Debug)]
-pub struct Observation<T>(Float<T>, Float<T>)
-where
-    T: num::Float;
+pub struct Observation(Float<f64>, Float<f64>);
 
-impl Default for Observation<f32> {
+impl Default for Observation {
     fn default() -> Self {
         Observation(0., 0.)
     }
 }
 
-impl Default for Observation<f64> {
-    fn default() -> Self {
-        Observation(0., 0.)
-    }
-}
-
-impl<T> Observation<T>
-where
-    T: num::Float,
-{
-    pub fn get_position(&self) -> Float<T> {
+impl Observation {
+    pub fn get_position(&self) -> Float<f64> {
         self.0
     }
 
-    pub fn get_velocity(&self) -> Float<T> {
+    pub fn get_velocity(&self) -> Float<f64> {
         self.1
     }
 }
 
-impl<T> MountainCarEnv<T>
-where
-    T: num::Float,
-{
-    fn new(render_mode: Option<&str>, goal_velocity: Option<Float<T>>) -> Self {
+impl<A> MountainCarEnv<A> {
+    fn new(render_mode: Option<&str>, goal_velocity: Option<Float<f64>>) -> Self {
         let rng = Pcg64::from_entropy();
 
         let min_position = -1.2;
         let max_position = 0.6;
         let max_speed = 0.07;
         let goal_position = 0.5;
-        let goal_velocity = goal_velocity.unwrap_or(OrderedFloat(0.));
+        let goal_velocity = goal_velocity.unwrap_or(0.);
 
         let force = 0.001;
         let gravity = 0.0025;
@@ -158,10 +142,7 @@ where
     }
 }
 
-impl<T, A> GymEnv for MountainCarEnv<T, A>
-where
-    T: num::Float,
-{
+impl<A> GymEnv for MountainCarEnv<A> {
     type ActionType = A;
 
     fn step(&mut self, action: Self::ActionType) -> (Vec<f64>, f64, bool, Option<String>) {
@@ -180,8 +161,8 @@ where
             }
         };
 
-        let mut position = self.state[0];
-        let mut velocity = self.state[1];
+        let mut position = self.state.get_position();
+        let mut velocity = self.state.get_velocity();
 
         velocity += action * self.force + (3.0 * position).cos() * (-self.gravity);
         if velocity > self.max_speed {
@@ -291,7 +272,7 @@ mod tests {
 
     #[test]
     fn mountain_car() {
-        let mut mc = MountainCarEnv::default();
+        let mut mc = MountainCarEnv::new(None, None);
         let _state = mc.reset();
 
         let mut rng = thread_rng();

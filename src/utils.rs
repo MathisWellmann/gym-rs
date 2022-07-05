@@ -4,8 +4,6 @@ pub fn scale<T: num::Float>(from_min: T, from_max: T, to_min: T, to_max: T, valu
     to_min + ((value - from_min) * (to_max - to_min)) / (from_max - from_min)
 }
 
-pub type Float<T> = T;
-
 #[cfg(test)]
 mod tests {
     use super::*;
