@@ -3,10 +3,12 @@ use crate::spaces;
 use crate::utils::math_ops;
 use crate::utils::renderer::{RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
+use derivative::Derivative;
 use derive_new::new;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use serde::Serialize;
 
 ///Description:
 ///  The agent (a car) is started at the bottom of a valley. For any given
@@ -48,7 +50,8 @@ use rand_pcg::Pcg64;
 ///Episode Termination:
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
-#[derive(Debug, Serialize)]
+#[derive(Serialize, Derivative)]
+#[derivative(Debug)]
 pub struct MountainCarEnv<'a> {
     /// TODO
     pub min_position: f64,
@@ -82,6 +85,8 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     pub screen_height: usize,
     /// TODO
+    #[serde(skip_serializing)]
+    #[derivative(Debug = "ignore")]
     pub screen: Option<sdl2::video::Window>,
     // number of episodes
     /// TODO
@@ -97,11 +102,12 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     pub state: Observation,
     /// RANDOM NUMBER GENERATOR
+    #[serde(skip_serializing)]
     rng: Pcg64,
 }
 
 /// Utility structure intended to reduce confusion around meaning of properties.
-#[derive(Debug, new, Copy, Clone)]
+#[derive(Debug, new, Copy, Clone, Serialize)]
 pub struct Observation(f64, f64);
 
 impl Default for Observation {

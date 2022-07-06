@@ -1,5 +1,8 @@
+use derive_new::new;
+use serde::{ser::SerializeSeq, Serialize};
+
 /// TODO
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Renderer<'a> {
     no_returns_render: &'a [RenderMode],
     single_render: &'a [RenderMode],
@@ -59,11 +62,37 @@ impl<'a> Renderer<'a> {
     }
 }
 
+#[derive(Debug, new, PartialEq, PartialOrd, Clone, Serialize)]
+pub struct Colour {
+    r: usize,
+    g: usize,
+    b: usize,
+}
 /// TODO
-pub type RenderFrame = [[[usize; 3]; 255]; 255];
+#[derive(Debug, new, PartialEq, PartialOrd, Clone)]
+pub struct RenderFrame([[Colour; 255]; 255]);
+
+impl Serialize for RenderFrame {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+        for e in &self.0 {
+            let colour_array = e
+                .clone()
+                .map(|colours| {
+                    format!("| R: {} | G: {} | B: {} |", colours.r, colours.g, colours.b)
+                })
+                .join(",");
+            seq.serialize_element(&colour_array)?
+        }
+        todo!()
+    }
+}
 
 /// TODO
-#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize)]
 pub enum RenderMode {
     /// TODO
     Human,
@@ -83,7 +112,7 @@ impl RenderMode {
 }
 
 /// TODO
-#[derive(PartialEq, PartialOrd, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Serialize)]
 pub enum Render {
     /// TODO
     Human,

@@ -1,6 +1,5 @@
 //! The gym-rs crate is a pure rust implementation of OpenAI's Gym
 
-#[macro_use]
 extern crate log;
 
 // mod action_type;
