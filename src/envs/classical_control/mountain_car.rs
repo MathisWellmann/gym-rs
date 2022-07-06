@@ -141,7 +141,7 @@ impl From<Observation> for Vec<f64> {
 }
 
 impl<'a> MountainCarEnv<'a> {
-    fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
+    pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
         let (rng, _) = rand_random(None);
 
         let min_position = -1.2;
