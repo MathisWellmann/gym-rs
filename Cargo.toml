@@ -35,7 +35,7 @@ plotters = "0.3.0"
 
 derive-new = "0.5"
 cosyne = { version = "0.3.2", optional = true }
-sdl2 = "0.35"
+sdl2 = {version="0.35", features=["bundled"]}
 
 [[example]]
 name = "cart_pole"
