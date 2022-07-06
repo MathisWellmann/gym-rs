@@ -106,9 +106,16 @@ pub enum RenderMode {
     None,
 }
 
+impl Default for RenderMode {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
 impl RenderMode {
     const NO_RETURNS_RENDER: &'static [RenderMode] = &[RenderMode::Human];
     const SINGLE_RENDER: &'static [RenderMode] = &[RenderMode::SingleRgbArray];
+    pub const DEFAULT: &'static [RenderMode] = &[];
 }
 
 /// TODO

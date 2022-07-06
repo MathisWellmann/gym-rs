@@ -1,5 +1,5 @@
 use crate::core::{ActionReward, Env};
-use crate::spaces::{self, Space};
+use crate::spaces::{self, Discrete, Space};
 use crate::utils::math_ops;
 use crate::utils::renderer::{RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
@@ -88,9 +88,9 @@ pub struct MountainCarEnv<'a> {
 
     // NOTE: Consider using SDL2 to reduce differences between gym_rs and the python implementation.
     /// TODO
-    pub screen_width: usize,
+    pub screen_width: u32,
     /// TODO
-    pub screen_height: usize,
+    pub screen_height: u32,
     /// TODO
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
@@ -112,9 +112,32 @@ pub struct MountainCarEnv<'a> {
 
     /// TODO
     pub state: Observation,
+
     /// RANDOM NUMBER GENERATOR
     #[serde(skip_serializing)]
-    rng: Pcg64,
+    rand_random: Pcg64,
+    metadata: MountainCarMetadata,
+}
+
+const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
+    RenderMode::Human,
+    RenderMode::RgbArray,
+    RenderMode::SingleRgbArray,
+];
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MountainCarMetadata {
+    render_modes: &'static [RenderMode],
+    render_fps: usize,
+}
+
+impl Default for MountainCarMetadata {
+    fn default() -> Self {
+        Self {
+            render_modes: MOUNTAIN_CAR_RENDER_MODES,
+            render_fps: 30,
+        }
+    }
 }
 
 /// Utility structure intended to reduce confusion around meaning of properties.
@@ -153,7 +176,7 @@ impl From<Observation> for Vec<f64> {
 
 impl<'a> MountainCarEnv<'a> {
     pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
-        let (rng, _) = rand_random(None);
+        let (rand_random, _) = rand_random(None);
 
         let min_position = -1.2;
         let max_position = 0.6;
@@ -185,6 +208,8 @@ impl<'a> MountainCarEnv<'a> {
         let surf = None;
         let clock = None;
 
+        let metadata = MountainCarMetadata::default();
+
         Self {
             min_position,
             max_position,
@@ -205,15 +230,16 @@ impl<'a> MountainCarEnv<'a> {
             observation_space,
 
             state,
-            rng,
+            rand_random,
 
+            screen,
+            surf,
             screen_width,
             screen_height,
             clock,
-            screen,
             isopen,
 
-            surf,
+            metadata,
         }
     }
 }
@@ -222,6 +248,9 @@ impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
     type Observation = Observation;
     type Info = String;
+    type Metadata = MountainCarMetadata;
+    type ActionSpace = Discrete;
+    type ObservationSpace = spaces::Box<Self::Observation>;
 
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
         assert!(
@@ -258,8 +287,8 @@ impl<'a> Env for MountainCarEnv<'a> {
     }
 
     fn reset(&mut self) -> Vec<f64> {
-        let random_position = Uniform::new::<f64, f64>(-0.6, -0.4);
-        self.state = Observation::new(self.rng.sample(random_position), 0.0);
+        let initial_position = Uniform::new::<f64, f64>(-0.6, -0.4);
+        self.state = Observation::new(self.rand_random.sample(initial_position), 0.0);
         self.state.into()
     }
 
@@ -267,13 +296,48 @@ impl<'a> Env for MountainCarEnv<'a> {
         &mut self,
         mode: crate::utils::renderer::RenderMode,
     ) -> crate::utils::renderer::Render {
+        assert!(self.metadata.render_modes.contains(&mode));
+
+        if self.screen.is_none() {
+            let sdl_context = sdl2::init().unwrap();
+
+            if mode == RenderMode::Human {
+                let video_subsystem = sdl_context.video().unwrap();
+
+                let window = video_subsystem
+                    .window("Mountain Car", self.screen_width, self.screen_height)
+                    .position_centered()
+                    .build()
+                    .unwrap();
+
+                self.screen = Some(window);
+            } else {
+            }
+        }
+
         todo!()
     }
 
     fn seed(&mut self, seed: Option<u64>) -> u64 {
         let (new_rng, new_rng_seed) = rand_random(seed);
-        self.rng = new_rng;
+        self.rand_random = new_rng;
         new_rng_seed
+    }
+
+    fn rand_random(&self) -> &Pcg64 {
+        &self.rand_random
+    }
+
+    fn metadata(&self) -> &Self::Metadata {
+        &self.metadata
+    }
+
+    fn action_space(&self) -> &Self::ActionSpace {
+        &self.action_space
+    }
+
+    fn observation_space(&self) -> &Self::ObservationSpace {
+        &self.observation_space
     }
 }
 

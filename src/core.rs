@@ -1,13 +1,35 @@
 use rand_pcg::Pcg64;
+use serde::Serialize;
 
 use crate::utils::renderer::{Render, RenderMode};
+
+pub struct DefaultMetaData {
+    render_modes: &'static [RenderMode],
+}
+
+impl Default for DefaultMetaData {
+    fn default() -> Self {
+        Self {
+            render_modes: RenderMode::DEFAULT,
+        }
+    }
+}
 
 /// TODO
 pub trait Env {
     /// TODO
     type Action;
+    /// TODO
     type Observation;
+    /// TODO
     type Info;
+
+    /// TODO
+    type Metadata;
+    /// TODO
+    type ActionSpace;
+    /// TODO
+    type ObservationSpace;
 
     /// TODO
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
@@ -20,7 +42,29 @@ pub trait Env {
 
     /// TODO
     fn seed(&mut self, seed: Option<u64>) -> u64;
+
+    fn rand_random(&self) -> &Pcg64;
+
+    fn metadata(&self) -> &Self::Metadata;
+
+    fn render_mode(&self) -> &RenderMode {
+        DEFAULT_RENDER_MODE
+    }
+
+    fn reward_range(&self) -> &RewardRange {
+        DEFAULT_REWARD_RANGE
+    }
+
+    fn action_space(&self) -> &Self::ActionSpace;
+    fn observation_space(&self) -> &Self::ObservationSpace;
 }
+
+const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
+    lower_bound: f64::NEG_INFINITY,
+    upper_bound: f64::INFINITY,
+});
+
+const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
 
 /// TODO
 #[derive(Clone, Debug, Copy)]
@@ -35,32 +79,14 @@ pub struct ActionReward<T, E> {
     pub info: Option<E>,
 }
 
-trait Seedable {
-    fn rand_random(&self) -> &Pcg64;
-    fn set_rand_random(&mut self, generator: Pcg64);
+#[derive(Clone, Debug, Serialize)]
+pub struct RewardRange {
+    lower_bound: f64,
+    upper_bound: f64,
 }
-
-struct Metadata {
-
-}
-
-struct RewardRange{
-    lower_bound: f64, 
-    upper_bound: f64
-};
 
 impl Default for RewardRange {
     fn default() -> Self {
-        RewardRange {
-            lower_bound: f64::NEG_INFINITY;
-            upper_bound: f64::INFINITY;
-        }
+        DEFAULT_REWARD_RANGE.clone()
     }
-}
-
-trait Feedback {
-    fn metadata(&self);
-    fn render_mode(&self);
-    fn reward_range(&self) -> RewardRange;
-    fn action_space()
 }
