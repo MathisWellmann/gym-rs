@@ -1,4 +1,4 @@
-use crate::core::Env;
+use crate::core::{ActionReward, Env};
 use crate::spaces;
 use crate::utils::math_ops;
 use crate::utils::renderer::{RenderMode, Renderer};
@@ -11,20 +11,24 @@ use rand_pcg::Pcg64;
 use serde::Serialize;
 
 ///Description:
+///
 ///  The agent (a car) is started at the bottom of a valley. For any given
 ///  state, the agent may choose to accelerate to the left, right or cease
 ///  any acceleration.
 ///
 ///Source:
+///
 ///  The environment appeared first in Andrew Moore's PhD Thesis (1990).
 ///  the source code in python: https://www.github.com/openai/gym
 ///
 ///Observation:
+///
 ///  Num     Observation         Min     Max
 ///  0       Car Position        -1.2    0.6
 ///  1       Car Velocity        -0.07   0.07
 ///
 ///Actions:
+///
 ///  In case of discrete action:
 ///  Num    Action
 ///  0      Accelerate to the left
@@ -38,16 +42,19 @@ use serde::Serialize;
 ///  Note: This does not affect the amount of velocity affected by the gravitational pull acting on the cart.
 ///
 ///Reward:
+///
 ///  Reward of 0 is awarded if the agent reached the flag (position = 0.5)
 ///  on top of the mountain.
 ///  Reward of -1 is awarded if the position of the agent is less than 0.5.
 ///
 ///Starting State:
+///
 ///  The position of the car is assigned a uniform random value in
 ///  [-0.6, -0.4].
 ///  The starting velocity of the car is always assigned to 0.
 ///
 ///Episode Termination:
+///
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
 #[derive(Serialize, Derivative)]
@@ -205,8 +212,10 @@ impl<'a> MountainCarEnv<'a> {
 
 impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
+    type Observation = Observation;
+    type Info = String;
 
-    fn step(&mut self, action: Self::Action) -> (Vec<f64>, f64, bool, Option<String>) {
+    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),
             "{} (usize) invalid",
@@ -232,7 +241,12 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         self.state.update(position, velocity);
 
-        (self.state.into(), reward, done, None)
+        ActionReward {
+            observation: self.state,
+            reward,
+            done,
+            info: None,
+        }
     }
 
     fn reset(&mut self) -> Vec<f64> {
@@ -273,7 +287,7 @@ mod tests {
                 break;
             }
             let action = rng.gen_range(0, 3);
-            let (_state, _r, done, _) = mc.step(action);
+            let ActionReward { done, .. } = mc.step(action);
             episode_length += 1;
             end = done;
             println!("episode_length: {}", episode_length);

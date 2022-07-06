@@ -6,9 +6,11 @@ use crate::utils::renderer::{Render, RenderMode};
 pub trait Env {
     /// TODO
     type Action;
+    type Observation;
+    type Info;
 
     /// TODO
-    fn step(&mut self, action: Self::Action) -> (Vec<f64>, f64, bool, Option<String>);
+    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
     /// TODO
     fn reset(&mut self) -> Vec<f64>;
@@ -18,6 +20,19 @@ pub trait Env {
 
     /// TODO
     fn seed(&mut self, seed: Option<u64>) -> u64;
+}
+
+/// TODO
+#[derive(Clone, Debug, Copy)]
+pub struct ActionReward<T, E> {
+    // TODO
+    pub observation: T,
+    // TODO
+    pub reward: f64,
+    // TODO
+    pub done: bool,
+    // TODO
+    pub info: Option<E>,
 }
 
 trait Seedable {
