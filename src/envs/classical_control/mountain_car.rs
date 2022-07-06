@@ -1,5 +1,5 @@
 use crate::core::{ActionReward, Env};
-use crate::spaces;
+use crate::spaces::{self, Space};
 use crate::utils::math_ops;
 use crate::utils::renderer::{RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
@@ -95,9 +95,13 @@ pub struct MountainCarEnv<'a> {
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     pub screen: Option<sdl2::video::Window>,
-    // number of episodes
     /// TODO
-    pub clock: usize,
+    #[serde(skip_serializing)]
+    #[derivative(Debug = "ignore")]
+    pub clock: Option<sdl2::TimerSubsystem>,
+    #[serde(skip_serializing)]
+    #[derivative(Debug = "ignore")]
+    pub surf: Option<sdl2::surface::Surface<'a>>,
     /// TODO
     pub isopen: bool,
 
@@ -170,14 +174,16 @@ impl<'a> MountainCarEnv<'a> {
         // shouldn't use it).
         let state = Observation::default();
 
-        let clock = 0;
         let screen_width = 600;
         let screen_height = 400;
         let screen = None;
         let isopen = false;
 
         let action_space = spaces::Discrete(3);
-        let observation_space = spaces::Box(low, high);
+        let observation_space = spaces::Box::new(low, high);
+
+        let surf = None;
+        let clock = None;
 
         Self {
             min_position,
@@ -206,6 +212,8 @@ impl<'a> MountainCarEnv<'a> {
             clock,
             screen,
             isopen,
+
+            surf,
         }
     }
 }

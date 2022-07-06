@@ -1,12 +1,14 @@
 use serde::Serialize;
 
-/// TODO
+use super::Space;
+
 #[derive(Debug, Serialize)]
 pub struct Discrete(pub usize);
 
-impl Discrete {
-    /// TODO
-    pub fn contains(&self, value: usize) -> bool {
-        value < self.0
+impl Space<usize> for Discrete {
+    fn contains(&self, value: usize) -> bool {
+        match *self {
+            Discrete(upper_bound) => value < upper_bound,
+        }
     }
 }

@@ -40,4 +40,27 @@ trait Seedable {
     fn set_rand_random(&mut self, generator: Pcg64);
 }
 
-trait Feedback {}
+struct Metadata {
+
+}
+
+struct RewardRange{
+    lower_bound: f64, 
+    upper_bound: f64
+};
+
+impl Default for RewardRange {
+    fn default() -> Self {
+        RewardRange {
+            lower_bound: f64::NEG_INFINITY;
+            upper_bound: f64::INFINITY;
+        }
+    }
+}
+
+trait Feedback {
+    fn metadata(&self);
+    fn render_mode(&self);
+    fn reward_range(&self) -> RewardRange;
+    fn action_space()
+}
