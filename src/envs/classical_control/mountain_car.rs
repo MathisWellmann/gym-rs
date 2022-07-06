@@ -48,6 +48,7 @@ use rand_pcg::Pcg64;
 ///Episode Termination:
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
+#[derive(Debug, Serialize)]
 pub struct MountainCarEnv<'a> {
     /// TODO
     pub min_position: f64,
