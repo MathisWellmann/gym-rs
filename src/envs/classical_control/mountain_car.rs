@@ -1,9 +1,11 @@
-use crate::core::{GymEnv, RenderMode};
-use crate::utils::scale;
-use crate::{spaces, utils};
-use plotters::prelude::*;
+use crate::core::Env;
+use crate::spaces;
+use crate::utils::math_ops;
+use crate::utils::renderer::{RenderMode, Renderer};
+use crate::utils::seeding::rand_random;
+use derive_new::new;
 use rand::distributions::Uniform;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use rand_pcg::Pcg64;
 
 /**
@@ -49,38 +51,59 @@ Episode Termination:
     Episode length is greater than 200
 **/
 
-#[derive(Debug)]
-pub struct MountainCarEnv {
+pub struct MountainCarEnv<'a> {
+    /// TODO
     pub min_position: f64,
+    /// TODO
     pub max_position: f64,
+    /// TODO
     pub max_speed: f64,
+    /// TODO
     pub goal_position: f64,
+    /// TODO
     pub goal_velocity: f64,
 
+    /// TODO
     pub force: f64,
+    /// TODO
     pub gravity: f64,
 
+    /// TODO
     pub low: Observation,
+    /// TODO
     pub high: Observation,
 
+    /// TODO
+    pub render_mode: RenderMode,
+    /// TODO
+    pub renderer: Renderer<'a>,
+
     // NOTE: Consider using SDL2 to reduce differences between gym_rs and the python implementation.
+    /// TODO
     pub screen_width: usize,
+    /// TODO
     pub screen_height: usize,
-    pub screen: Option<f32>,
+    /// TODO
+    pub screen: Option<sdl2::video::Window>,
     // number of episodes
+    /// TODO
     pub clock: usize,
+    /// TODO
     pub isopen: bool,
 
+    /// TODO
     pub action_space: spaces::Discrete,
+    /// TODO
     pub observation_space: spaces::Box<Observation>,
 
+    /// TODO
     pub state: Observation,
     /// RANDOM NUMBER GENERATOR
     rng: Pcg64,
 }
 
-// Utility structure intended to reduce confusion around meaning of properties.
-#[derive(Debug)]
+/// Utility structure intended to reduce confusion around meaning of properties.
+#[derive(Debug, new, Copy, Clone)]
 pub struct Observation(f64, f64);
 
 impl Default for Observation {
@@ -90,14 +113,17 @@ impl Default for Observation {
 }
 
 impl Observation {
+    /// TODO
     pub fn get_position(&self) -> f64 {
         self.0
     }
 
+    /// TODO
     pub fn get_velocity(&self) -> f64 {
         self.1
     }
 
+    /// TODO
     pub fn update(&mut self, position: f64, velocity: f64) {
         self.0 = position;
         self.1 = velocity;
@@ -110,9 +136,9 @@ impl From<Observation> for Vec<f64> {
     }
 }
 
-impl MountainCarEnv {
-    fn new(render_mode: Option<&str>, goal_velocity: Option<f64>) -> Self {
-        let rng = Pcg64::from_entropy();
+impl<'a> MountainCarEnv<'a> {
+    fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
+        let (rng, _) = rand_random(None);
 
         let min_position = -1.2;
         let max_position = 0.6;
@@ -126,8 +152,7 @@ impl MountainCarEnv {
         let low = Observation(min_position, -max_speed);
         let high = Observation(max_position, max_speed);
 
-        let render_mode = "";
-        let renderer = "";
+        let renderer = Renderer::new(render_mode, None, None);
 
         // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
         // loaded via function (the later would deviate more from the current interface, so we
@@ -137,6 +162,8 @@ impl MountainCarEnv {
         let clock = 0;
         let screen_width = 600;
         let screen_height = 400;
+        let screen = None;
+        let isopen = false;
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::Box(low, high);
@@ -154,6 +181,9 @@ impl MountainCarEnv {
             low,
             high,
 
+            render_mode,
+            renderer,
+
             action_space,
             observation_space,
 
@@ -163,13 +193,13 @@ impl MountainCarEnv {
             screen_width,
             screen_height,
             clock,
-            screen: todo!(),
-            isopen: todo!(),
+            screen,
+            isopen,
         }
     }
 }
 
-impl GymEnv for MountainCarEnv {
+impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
 
     fn step(&mut self, action: Self::Action) -> (Vec<f64>, f64, bool, Option<String>) {
@@ -183,10 +213,10 @@ impl GymEnv for MountainCarEnv {
         let mut velocity = self.state.get_velocity();
 
         velocity += (action - 1) as f64 * self.force + (3.0 * position).cos() * (-self.gravity);
-        velocity = utils::clip(velocity, -self.max_speed, self.max_speed);
+        velocity = math_ops::clip(velocity, -self.max_speed, self.max_speed);
 
         position += velocity;
-        position = utils::clip(position, self.min_position, self.max_position);
+        position = math_ops::clip(position, self.min_position, self.max_position);
 
         if position == self.min_position && velocity < 0.0 {
             velocity = 0.0;
@@ -201,16 +231,22 @@ impl GymEnv for MountainCarEnv {
     }
 
     fn reset(&mut self) -> Vec<f64> {
-        let d = Uniform::new(-0.6, -0.4);
-        self.state = [self.rng.sample(d), 0.0];
-        self.state.to_vec()
+        let random_position = Uniform::new::<f64, f64>(-0.6, -0.4);
+        self.state = Observation::new(self.rng.sample(random_position), 0.0);
+        self.state.into()
     }
 
-    /// render the environment using 30 frames per second
-    fn render(&self, mode: RenderMode) {}
+    fn render(
+        &mut self,
+        mode: crate::utils::renderer::RenderMode,
+    ) -> crate::utils::renderer::Render {
+        todo!()
+    }
 
-    fn seed(&mut self, seed: u64) {
-        self.rng = Pcg64::seed_from_u64(seed);
+    fn seed(&mut self, seed: Option<u64>) -> u64 {
+        let (new_rng, new_rng_seed) = rand_random(seed);
+        self.rng = new_rng;
+        new_rng_seed
     }
 }
 
@@ -221,19 +257,21 @@ mod tests {
 
     #[test]
     fn mountain_car() {
-        let mut mc = MountainCarEnv::new(None, None);
+        let mut mc = MountainCarEnv::new(RenderMode::None, None);
         let _state = mc.reset();
 
         let mut rng = thread_rng();
         let mut end: bool = false;
+        let mut episode_length = 0;
         while !end {
-            if mc.episode_length > 200 {
+            if episode_length > 200 {
                 break;
             }
             let action = rng.gen_range(0, 3);
             let (_state, _r, done, _) = mc.step(action);
+            episode_length += 1;
             end = done;
-            println!("episode_length: {}", mc.episode_length);
+            println!("episode_length: {}", episode_length);
         }
     }
 }

@@ -33,6 +33,7 @@ find_folder = "0.3.0"
 failure = "0.1.8"
 plotters = "0.3.0"
 
+derive-new = "0.5"
 cosyne = { version = "0.3.2", optional = true }
 sdl2 = "0.35"
 
