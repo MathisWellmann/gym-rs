@@ -8,6 +8,7 @@ use derive_new::new;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use sdl2::render::{Canvas, WindowCanvas};
 use serde::Serialize;
 
 ///Description:
@@ -94,14 +95,11 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
-    pub screen: Option<sdl2::video::Window>,
+    pub screen: Option<WindowCanvas>,
     /// TODO
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     pub clock: Option<sdl2::TimerSubsystem>,
-    #[serde(skip_serializing)]
-    #[derivative(Debug = "ignore")]
-    pub surf: Option<sdl2::surface::Surface<'a>>,
     /// TODO
     pub isopen: bool,
 
@@ -205,7 +203,6 @@ impl<'a> MountainCarEnv<'a> {
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::Box::new(low, high);
 
-        let surf = None;
         let clock = None;
 
         let metadata = MountainCarMetadata::default();
@@ -233,7 +230,6 @@ impl<'a> MountainCarEnv<'a> {
             rand_random,
 
             screen,
-            surf,
             screen_width,
             screen_height,
             clock,
@@ -301,16 +297,22 @@ impl<'a> Env for MountainCarEnv<'a> {
         if self.screen.is_none() {
             let sdl_context = sdl2::init().unwrap();
 
+            if self.clock.is_none() {
+                let timer = sdl_context.timer().unwrap();
+                self.clock = Some(timer);
+            }
+
             if mode == RenderMode::Human {
                 let video_subsystem = sdl_context.video().unwrap();
-
                 let window = video_subsystem
                     .window("Mountain Car", self.screen_width, self.screen_height)
                     .position_centered()
                     .build()
                     .unwrap();
 
-                self.screen = Some(window);
+                let canvas = window.into_canvas().accelerated().build().unwrap();
+
+                self.screen = Some(canvas);
             } else {
             }
         }

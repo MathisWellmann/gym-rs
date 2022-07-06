@@ -40,6 +40,8 @@ pub trait Env {
     /// TODO
     fn render(&mut self, mode: RenderMode) -> Render;
 
+    fn close(&mut self) {}
+
     /// TODO
     fn seed(&mut self, seed: Option<u64>) -> u64;
 
