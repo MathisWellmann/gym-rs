@@ -1,14 +1,20 @@
+use std::iter::zip;
+
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, Discrete, Space};
 use crate::utils::math_ops;
-use crate::utils::renderer::{RenderMode, Renderer};
+use crate::utils::renderer::{Render, RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::rect::Point;
 use sdl2::render::{Canvas, WindowCanvas};
+use sdl2::surface::Surface;
+use sdl2::{Sdl, TimerSubsystem};
 use serde::Serialize;
 
 ///Description:
@@ -95,11 +101,7 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
-    pub screen: Option<WindowCanvas>,
-    /// TODO
-    #[serde(skip_serializing)]
-    #[derivative(Debug = "ignore")]
-    pub clock: Option<sdl2::TimerSubsystem>,
+    pub screen: Option<Screen>,
     /// TODO
     pub isopen: bool,
 
@@ -140,39 +142,42 @@ impl Default for MountainCarMetadata {
 
 /// Utility structure intended to reduce confusion around meaning of properties.
 #[derive(Debug, new, Copy, Clone, Serialize)]
-pub struct Observation(f64, f64);
+pub struct Observation {
+    position: f64,
+    velocity: f64,
+}
 
 impl Default for Observation {
     fn default() -> Self {
-        Observation(0., 0.)
+        Observation {
+            position: 0.,
+            velocity: 0.,
+        }
     }
 }
 
 impl Observation {
     /// TODO
-    pub fn get_position(&self) -> f64 {
-        self.0
-    }
-
-    /// TODO
-    pub fn get_velocity(&self) -> f64 {
-        self.1
-    }
-
-    /// TODO
     pub fn update(&mut self, position: f64, velocity: f64) {
-        self.0 = position;
-        self.1 = velocity;
+        self.position = position;
+        self.velocity = velocity;
     }
 }
 
-impl From<Observation> for Vec<f64> {
-    fn from(observation: Observation) -> Self {
-        vec![observation.0, observation.1]
-    }
+pub struct Screen {
+    pub context: Sdl,
+    pub canvas: WindowCanvas,
+    pub timer: TimerSubsystem,
 }
 
 impl<'a> MountainCarEnv<'a> {
+    fn height(xs: &Vec<f64>) -> Vec<f64> {
+        xs.clone()
+            .iter()
+            .map(|value| (3. * value).sin() * 0.45 + 0.55)
+            .collect()
+    }
+
     pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
         let (rand_random, _) = rand_random(None);
 
@@ -185,8 +190,8 @@ impl<'a> MountainCarEnv<'a> {
         let force = 0.001;
         let gravity = 0.0025;
 
-        let low = Observation(min_position, -max_speed);
-        let high = Observation(max_position, max_speed);
+        let low = Observation::new(min_position, -max_speed);
+        let high = Observation::new(max_position, max_speed);
 
         let renderer = Renderer::new(render_mode, None, None);
 
@@ -202,8 +207,6 @@ impl<'a> MountainCarEnv<'a> {
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::Box::new(low, high);
-
-        let clock = None;
 
         let metadata = MountainCarMetadata::default();
 
@@ -232,7 +235,6 @@ impl<'a> MountainCarEnv<'a> {
             screen,
             screen_width,
             screen_height,
-            clock,
             isopen,
 
             metadata,
@@ -255,8 +257,8 @@ impl<'a> Env for MountainCarEnv<'a> {
             action
         );
 
-        let mut position = self.state.get_position();
-        let mut velocity = self.state.get_velocity();
+        let mut position = self.state.position;
+        let mut velocity = self.state.velocity;
 
         velocity +=
             (action as isize - 1) as f64 * self.force + (3.0 * position).cos() * (-self.gravity);
@@ -273,6 +275,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let reward: f64 = -1.0;
 
         self.state.update(position, velocity);
+        self.render(RenderMode::Human);
 
         ActionReward {
             observation: self.state,
@@ -282,42 +285,81 @@ impl<'a> Env for MountainCarEnv<'a> {
         }
     }
 
-    fn reset(&mut self) -> Vec<f64> {
+    fn reset(&mut self) -> Self::Observation {
         let initial_position = Uniform::new::<f64, f64>(-0.6, -0.4);
         self.state = Observation::new(self.rand_random.sample(initial_position), 0.0);
-        self.state.into()
+        self.state
     }
 
-    fn render(
-        &mut self,
-        mode: crate::utils::renderer::RenderMode,
-    ) -> crate::utils::renderer::Render {
+    fn render(&mut self, mode: RenderMode) -> Render {
         assert!(self.metadata.render_modes.contains(&mode));
 
-        if self.screen.is_none() {
+        let screen_width = self.screen_width;
+        let screen_height = self.screen_height;
+        let max_position = self.max_position;
+        let min_position = self.min_position;
+
+        self.screen.get_or_insert_with(|| {
             let sdl_context = sdl2::init().unwrap();
+            let video_subsystem = sdl_context.video().unwrap();
+            let mut window_builder =
+                video_subsystem.window("Mountain Car", screen_width, screen_height);
 
-            if self.clock.is_none() {
-                let timer = sdl_context.timer().unwrap();
-                self.clock = Some(timer);
+            window_builder.position_centered();
+
+            if mode != RenderMode::Human {
+                window_builder.hidden();
             }
 
-            if mode == RenderMode::Human {
-                let video_subsystem = sdl_context.video().unwrap();
-                let window = video_subsystem
-                    .window("Mountain Car", self.screen_width, self.screen_height)
-                    .position_centered()
-                    .build()
-                    .unwrap();
+            let window = window_builder.build().unwrap();
+            let canvas = window.into_canvas().accelerated().build().unwrap();
+            let timer = sdl_context.timer().unwrap();
 
-                let canvas = window.into_canvas().accelerated().build().unwrap();
+            let screen = Screen {
+                context: sdl_context,
+                canvas,
+                timer,
+            };
 
-                self.screen = Some(canvas);
-            } else {
-            }
-        }
+            screen
+        });
 
-        todo!()
+        let world_width = max_position - min_position;
+        let scale = screen_width as f64 / world_width;
+        let carwidth = 40;
+        let carheight = 20;
+
+        let screen = self.screen.as_mut().unwrap();
+        screen.canvas.set_draw_color(Color::WHITE);
+        screen.canvas.clear();
+
+        let pos = self.state.position;
+
+        let xs: Vec<f64> = (0..100)
+            .into_iter()
+            .map(|index| (((max_position - min_position) / 100.) * index as f64))
+            .map(|value| value + min_position)
+            .collect();
+
+        let ys: Vec<f64> = Self::height(&xs);
+        let xys: Vec<Point> = zip(
+            xs.iter().map(|value| (value - min_position) * scale),
+            ys.iter().map(|value| value * scale),
+        )
+        .map(|(x, y)| Point::new(x.floor() as i32, y.floor() as i32))
+        .collect();
+
+        screen.canvas.set_draw_color(Color::BLACK);
+        screen.canvas.draw_lines(xys.as_slice()).unwrap();
+
+        println!("SCALE: {}", scale);
+        println!("X: {:?}", xs[0..5].to_vec());
+        println!("Y: {:?}", ys[0..5].to_vec());
+        println!("{:?}", xys[0..5].to_vec());
+
+        screen.canvas.present();
+
+        Render::Human
     }
 
     fn seed(&mut self, seed: Option<u64>) -> u64 {
@@ -345,6 +387,9 @@ impl<'a> Env for MountainCarEnv<'a> {
 
 #[cfg(test)]
 mod tests {
+    use core::time;
+    use std::thread;
+
     use super::*;
     use rand::thread_rng;
 
@@ -364,6 +409,7 @@ mod tests {
             let ActionReward { done, .. } = mc.step(action);
             episode_length += 1;
             end = done;
+            thread::sleep(time::Duration::from_millis(100));
             println!("episode_length: {}", episode_length);
         }
     }

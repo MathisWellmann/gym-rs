@@ -35,7 +35,7 @@ pub trait Env {
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
     /// TODO
-    fn reset(&mut self) -> Vec<f64>;
+    fn reset(&mut self) -> Self::Observation;
 
     /// TODO
     fn render(&mut self, mode: RenderMode) -> Render;
