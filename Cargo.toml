@@ -35,9 +35,10 @@ plotters = "0.3.0"
 
 derive-new = "0.5"
 cosyne = { version = "0.3.2", optional = true }
-sdl2 = { version="0.35", features=["bundled"] }
+sdl2 = { version="0.35", features=["bundled", "gfx"] }
 serde = { version="1.0", features=["derive"] }
-derivative = { version="2.2.0" }
+derivative = { version="2.2" }
+nalgebra = "0.31"
 
 [[example]]
 name = "cart_pole"

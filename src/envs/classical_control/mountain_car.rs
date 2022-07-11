@@ -7,9 +7,12 @@ use crate::utils::renderer::{Render, RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
+use na::{Point2, Rotation2, Vector1, Vector2};
+use nalgebra as na;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
 use sdl2::render::{Canvas, WindowCanvas};
@@ -356,6 +359,30 @@ impl<'a> Env for MountainCarEnv<'a> {
         println!("X: {:?}", xs[0..5].to_vec());
         println!("Y: {:?}", ys[0..5].to_vec());
         println!("{:?}", xys[0..5].to_vec());
+
+        let clearance = 10;
+
+        let (l, r, t, b) = (-carwidth / 2, carwidth / 2, carheight, 0);
+        let coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
+            let vector = Point2::new(x as f64, y as f64);
+            let desired_angle = (3. * pos).cos();
+            let rotation_matrix = Rotation2::new(desired_angle);
+            let line = rotation_matrix.transform_point(&vector);
+
+            let (x, y) = (line.x, line.y);
+
+            let new_x = x + (pos - min_position) * scale;
+            let new_y = y + clearance as f64 + Self::height(&vec![pos]).pop().unwrap() * scale;
+
+            (new_x, new_y)
+        });
+
+        println!("{:?}", coords);
+
+        let coords_x = coords.map(|coord| coord.0.floor() as i16);
+        let coords_y = coords.map(|coord| coord.1.floor() as i16);
+
+        screen.canvas.aa_polygon(&coords_x, &coords_y, Color::BLACK);
 
         screen.canvas.present();
 
