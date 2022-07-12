@@ -15,7 +15,7 @@ use rand::Rng;
 use rand_pcg::Pcg64;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
 use sdl2::{Sdl, TimerSubsystem};
 use serde::Serialize;
@@ -126,6 +126,7 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::Human,
     RenderMode::RgbArray,
     RenderMode::SingleRgbArray,
+    RenderMode::None,
 ];
 
 #[derive(Debug, Clone, Serialize)]
@@ -278,7 +279,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let reward: f64 = -1.0;
 
         self.state.update(position, velocity);
-        self.render(RenderMode::Human);
+        self.render(self.render_mode);
 
         ActionReward {
             observation: self.state,
