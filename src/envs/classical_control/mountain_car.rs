@@ -151,6 +151,12 @@ pub struct Observation {
     velocity: f64,
 }
 
+impl From<Observation> for Vec<f64> {
+    fn from(o: Observation) -> Self {
+        vec![o.position, o.velocity]
+    }
+}
+
 impl Default for Observation {
     fn default() -> Self {
         Observation {

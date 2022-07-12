@@ -4,7 +4,10 @@ use serde::Serialize;
 use crate::utils::renderer::{Render, RenderMode};
 
 /// TODO
-pub trait Env {
+pub trait Env
+where
+    Self::Observation: Into<Vec<f64>>,
+{
     /// TODO
     type Action;
     /// TODO
