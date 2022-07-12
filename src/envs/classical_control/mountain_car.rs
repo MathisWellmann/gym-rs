@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
@@ -7,16 +8,15 @@ use crate::utils::renderer::{Render, RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
-use na::{Point2, Rotation2, Vector1, Vector2};
+use na::{Point2, Rotation2};
 use nalgebra as na;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
 use sdl2::gfx::primitives::DrawRenderer;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::Point;
-use sdl2::render::{Canvas, WindowCanvas};
-use sdl2::surface::Surface;
+use sdl2::pixels::Color;
+use sdl2::rect::{Point, Rect};
+use sdl2::render::WindowCanvas;
 use sdl2::{Sdl, TimerSubsystem};
 use serde::Serialize;
 
@@ -444,6 +444,16 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         screen.canvas.present();
 
+        // let context = &mut screen.context;
+        // let event_pump = &context.event_pump().unwrap();
+        // let mut surface = screen.canvas.window_mut().surface(event_pump).unwrap();
+        // surface
+        //     .fill_rect(Rect::new(100, 100, 100, 100), Color::WHITE)
+        //     .unwrap();
+        // surface.with_lock(|pixels| {
+        //     println!(" {:? } ", pixels);
+        //     println!(" PIXEL LENGTH: {:?}", pixels.len());
+        // });
         Render::Human
     }
 

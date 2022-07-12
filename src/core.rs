@@ -3,18 +3,6 @@ use serde::Serialize;
 
 use crate::utils::renderer::{Render, RenderMode};
 
-pub struct DefaultMetaData {
-    render_modes: &'static [RenderMode],
-}
-
-impl Default for DefaultMetaData {
-    fn default() -> Self {
-        Self {
-            render_modes: RenderMode::DEFAULT,
-        }
-    }
-}
-
 /// TODO
 pub trait Env {
     /// TODO
