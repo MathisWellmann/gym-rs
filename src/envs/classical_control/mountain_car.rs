@@ -8,14 +8,15 @@ use crate::utils::renderer::{Render, RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
+use log::debug;
 use na::{Point2, Rotation2};
 use nalgebra as na;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
 use sdl2::gfx::primitives::DrawRenderer;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::rect::{Point, Rect};
 use sdl2::render::WindowCanvas;
 use sdl2::{Sdl, TimerSubsystem};
 use serde::Serialize;
@@ -308,6 +309,8 @@ impl<'a> Env for MountainCarEnv<'a> {
         let screen_height = self.screen_height;
         let max_position = self.max_position;
         let min_position = self.min_position;
+        let goal_position = self.goal_position;
+        let state = self.state;
 
         self.screen.get_or_insert_with(|| {
             let sdl_context = sdl2::init().unwrap();
@@ -340,127 +343,136 @@ impl<'a> Env for MountainCarEnv<'a> {
         let carheight = 20;
 
         let screen = self.screen.as_mut().unwrap();
-        screen.canvas.set_draw_color(Color::WHITE);
-        screen.canvas.clear();
-
-        let pos = self.state.position;
-
-        let xs: Vec<f64> = (0..100)
-            .into_iter()
-            .map(|index| (((max_position - min_position) / 100.) * index as f64))
-            .map(|value| value + min_position)
-            .collect();
-
-        let ys: Vec<f64> = Self::height(&xs);
-        let xys: Vec<Point> = zip(
-            xs.iter().map(|value| (value - min_position) * scale),
-            ys.iter().map(|value| value * scale),
-        )
-        .map(|(x, y)| Point::new(x.floor() as i32, y.floor() as i32))
-        .collect();
-
-        screen.canvas.set_draw_color(Color::BLACK);
-        screen.canvas.draw_lines(xys.as_slice()).unwrap();
-
-        println!("SCALE: {}", scale);
-        println!("X: {:?}", xs[0..5].to_vec());
-        println!("Y: {:?}", ys[0..5].to_vec());
-        println!("{:?}", xys[0..5].to_vec());
-
-        let clearance = 10f64;
-
-        let (l, r, t, b) = (-carwidth / 2, carwidth / 2, carheight, 0);
-        let coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
-            let point = Point2::new(x as f64, y as f64);
-            let desired_angle = (3. * pos).cos();
-            let rotation_matrix = Rotation2::new(desired_angle);
-            let rotated_point = rotation_matrix.transform_point(&point);
-
-            let (x, y) = (rotated_point.x, rotated_point.y);
-
-            let new_x = x + (pos - min_position) * scale;
-            let new_y = y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale;
-
-            (new_x, new_y)
-        });
-
-        let coords_x = coords.map(|coord| coord.0.floor() as i16);
-        let coords_y = coords.map(|coord| coord.1.floor() as i16);
-
-        screen
-            .canvas
-            .aa_polygon(&coords_x, &coords_y, Color::BLACK)
-            .unwrap();
-
-        screen
-            .canvas
-            .filled_polygon(&coords_x, &coords_y, Color::BLACK)
-            .unwrap();
-
-        for (x, y) in [(carwidth as f64 / 4., 0.), ((-carwidth as f64 / 4.), 0.)] {
-            let point = Point2::new(x as f64, y as f64);
-            let desired_angle = (3. * pos).cos();
-            let rotation_matrix = Rotation2::new(desired_angle);
-            let rotated_point = rotation_matrix.transform_point(&point);
-
-            let (x, y) = (rotated_point.x, rotated_point.y);
-
-            let (wheel_x, wheel_y) = (
-                (x + (pos - min_position) * scale).floor() as i16,
-                (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale).floor() as i16,
-            );
-
-            let rad = (carheight as f64 / 2.5).floor() as i16;
-
-            screen
-                .canvas
-                .aa_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
-                .unwrap();
-
-            screen
-                .canvas
-                .filled_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
-                .unwrap();
-        }
-
-        let flagx = ((self.goal_position - self.min_position) * scale).floor() as i16;
-        let flagy1 =
-            (Self::height(&vec![self.goal_position]).pop().unwrap() * scale).floor() as i16;
-        let flagy2 = flagy1 + 50;
-        screen
-            .canvas
-            .vline(flagx, flagy1, flagy2, Color::BLACK)
-            .unwrap();
-
-        screen
-            .canvas
-            .aa_polygon(
-                &vec![flagx, flagx, flagx + 25],
-                &vec![flagy2, flagy2 - 10, flagy2 - 5],
-                Color::RGB(204, 204, 0),
-            )
-            .unwrap();
-        screen
-            .canvas
-            .filled_polygon(
-                &vec![flagx, flagx, flagx + 25],
-                &vec![flagy2, flagy2 - 10, flagy2 - 5],
-                Color::RGB(204, 204, 0),
+        let canvas = &mut screen.canvas;
+        let creator = canvas.texture_creator();
+        let mut texture = creator
+            .create_texture_target(
+                PixelFormatEnum::RGB24,
+                self.screen_width,
+                self.screen_height,
             )
             .unwrap();
 
-        screen.canvas.present();
+        canvas
+            .with_texture_canvas(&mut texture, |texture_canvas| {
+                texture_canvas.set_draw_color(Color::WHITE);
+                texture_canvas.clear();
 
-        // let context = &mut screen.context;
-        // let event_pump = &context.event_pump().unwrap();
-        // let mut surface = screen.canvas.window_mut().surface(event_pump).unwrap();
-        // surface
-        //     .fill_rect(Rect::new(100, 100, 100, 100), Color::WHITE)
-        //     .unwrap();
-        // surface.with_lock(|pixels| {
-        //     println!(" {:? } ", pixels);
-        //     println!(" PIXEL LENGTH: {:?}", pixels.len());
-        // });
+                let pos = state.position;
+
+                let xs: Vec<f64> = (0..100)
+                    .into_iter()
+                    .map(|index| (((max_position - min_position) / 100.) * index as f64))
+                    .map(|value| value + min_position)
+                    .collect();
+
+                let ys: Vec<f64> = Self::height(&xs);
+                let xys: Vec<Point> = zip(
+                    xs.iter().map(|value| (value - min_position) * scale),
+                    ys.iter().map(|value| value * scale),
+                )
+                .map(|(x, y)| Point::new(x.floor() as i32, y.floor() as i32))
+                .collect();
+
+                texture_canvas.set_draw_color(Color::BLACK);
+                texture_canvas.draw_lines(xys.as_slice()).unwrap();
+
+                debug!("SCALE: {}", scale);
+                debug!("X: {:?}", xs[0..5].to_vec());
+                debug!("Y: {:?}", ys[0..5].to_vec());
+                debug!("{:?}", xys[0..5].to_vec());
+
+                let clearance = 10f64;
+
+                let (l, r, t, b) = (-carwidth / 2, carwidth / 2, carheight, 0);
+                let coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
+                    let point = Point2::new(x as f64, y as f64);
+                    let desired_angle = (3. * pos).cos();
+                    let rotation_matrix = Rotation2::new(desired_angle);
+                    let rotated_point = rotation_matrix.transform_point(&point);
+
+                    let (x, y) = (rotated_point.x, rotated_point.y);
+
+                    let new_x = x + (pos - min_position) * scale;
+                    let new_y = y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale;
+
+                    (new_x, new_y)
+                });
+
+                let coords_x = coords.map(|coord| coord.0.floor() as i16);
+                let coords_y = coords.map(|coord| coord.1.floor() as i16);
+
+                texture_canvas
+                    .aa_polygon(&coords_x, &coords_y, Color::BLACK)
+                    .unwrap();
+
+                texture_canvas
+                    .filled_polygon(&coords_x, &coords_y, Color::BLACK)
+                    .unwrap();
+
+                for (x, y) in [(carwidth as f64 / 4., 0.), ((-carwidth as f64 / 4.), 0.)] {
+                    let point = Point2::new(x as f64, y as f64);
+                    let desired_angle = (3. * pos).cos();
+                    let rotation_matrix = Rotation2::new(desired_angle);
+                    let rotated_point = rotation_matrix.transform_point(&point);
+
+                    let (x, y) = (rotated_point.x, rotated_point.y);
+
+                    let (wheel_x, wheel_y) = (
+                        (x + (pos - min_position) * scale).floor() as i16,
+                        (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale).floor()
+                            as i16,
+                    );
+
+                    let rad = (carheight as f64 / 2.5).floor() as i16;
+
+                    texture_canvas
+                        .aa_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
+                        .unwrap();
+
+                    texture_canvas
+                        .filled_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
+                        .unwrap();
+                }
+
+                let flagx = ((goal_position - min_position) * scale).floor() as i16;
+                let flagy1 =
+                    (Self::height(&vec![goal_position]).pop().unwrap() * scale).floor() as i16;
+                let flagy2 = flagy1 + 50;
+                texture_canvas
+                    .vline(flagx, flagy1, flagy2, Color::BLACK)
+                    .unwrap();
+
+                texture_canvas
+                    .aa_polygon(
+                        &vec![flagx, flagx, flagx + 25],
+                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
+                        Color::RGB(204, 204, 0),
+                    )
+                    .unwrap();
+                texture_canvas
+                    .filled_polygon(
+                        &vec![flagx, flagx, flagx + 25],
+                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
+                        Color::RGB(204, 204, 0),
+                    )
+                    .unwrap();
+            })
+            .unwrap();
+
+        canvas
+            .copy_ex(&texture, None, None, 0., None, false, true)
+            .unwrap();
+        canvas.present();
+
+        //let context = &mut screen.context;
+        //let event_pump = &context.event_pump().unwrap();
+        //let mut surface = screen.canvas.window_mut().surface(event_pump).unwrap();
+        //surface.with_lock(|pixels| {
+        //debug!(" {:? } ", pixels);
+        //debug!(" PIXEL LENGTH: {:?}", pixels.len());
+        //});
+
         Render::Human
     }
 
@@ -497,7 +509,7 @@ mod tests {
 
     #[test]
     fn mountain_car() {
-        let mut mc = MountainCarEnv::new(RenderMode::None, None);
+        let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset();
 
         let mut rng = thread_rng();
