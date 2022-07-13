@@ -465,14 +465,6 @@ impl<'a> Env for MountainCarEnv<'a> {
             .unwrap();
         canvas.present();
 
-        //let context = &mut screen.context;
-        //let event_pump = &context.event_pump().unwrap();
-        //let mut surface = screen.canvas.window_mut().surface(event_pump).unwrap();
-        //surface.with_lock(|pixels| {
-        //debug!(" {:? } ", pixels);
-        //debug!(" PIXEL LENGTH: {:?}", pixels.len());
-        //});
-
         Render::Human
     }
 
