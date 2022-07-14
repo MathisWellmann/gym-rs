@@ -14,13 +14,14 @@ use nalgebra as na;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use sdl2::event::Event;
 use sdl2::gfx::framerate::FPSManager;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
 use sdl2::sys::gfx::framerate::{FPSmanager, FPS_DEFAULT};
-use sdl2::{Sdl, TimerSubsystem};
+use sdl2::{EventPump, Sdl, TimerSubsystem};
 use serde::Serialize;
 
 ///Description:
@@ -178,9 +179,9 @@ impl Observation {
 }
 
 pub struct Screen {
-    pub context: Sdl,
     pub canvas: WindowCanvas,
     pub fps_manager: FPSManager,
+    pub event_pump: EventPump,
 }
 
 impl<'a> MountainCarEnv<'a> {
@@ -329,14 +330,15 @@ impl<'a> Env for MountainCarEnv<'a> {
 
             let window = window_builder.build().unwrap();
             let canvas = window.into_canvas().accelerated().build().unwrap();
+            let event_pump = context.event_pump().expect("Could not recieve event pump.");
             let mut fps_manager = FPSManager::new();
             fps_manager
                 .set_framerate(fps)
                 .expect("Framerate was unable to be set.");
 
             let screen = Screen {
-                context,
                 canvas,
+                event_pump,
                 fps_manager,
             };
 
@@ -352,6 +354,15 @@ impl<'a> Env for MountainCarEnv<'a> {
         let canvas = &mut screen.canvas;
         let creator = canvas.texture_creator();
         let fps_manager = &mut screen.fps_manager;
+        let events = &mut screen.event_pump;
+
+        for event in events.poll_iter() {
+            match event {
+                Event::Quit { .. } => panic!("Force quit happened!"),
+                _ => (),
+            }
+        }
+
         let mut texture = creator
             .create_texture_target(
                 PixelFormatEnum::RGB24,
