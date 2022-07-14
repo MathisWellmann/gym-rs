@@ -194,8 +194,8 @@ impl Default for MountainCarMetadata {
 /// Utility structure intended to reduce confusion around meaning of properties.
 #[derive(Debug, new, Copy, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Observation {
-    position: O64,
-    velocity: O64,
+    pub position: O64,
+    pub velocity: O64,
 }
 
 impl From<Observation> for Vec<f64> {
