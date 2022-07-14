@@ -143,6 +143,32 @@ pub struct MountainCarEnv<'a> {
     metadata: MountainCarMetadata,
 }
 
+impl<'a> Clone for MountainCarEnv<'a> {
+    fn clone(&self) -> Self {
+        Self {
+            min_position: self.min_position.clone(),
+            max_position: self.max_position.clone(),
+            max_speed: self.max_speed.clone(),
+            goal_position: self.goal_position.clone(),
+            goal_velocity: self.goal_velocity.clone(),
+            force: self.force.clone(),
+            gravity: self.gravity.clone(),
+            low: self.low.clone(),
+            high: self.high.clone(),
+            render_mode: self.render_mode.clone(),
+            renderer: self.renderer.clone(),
+            screen_width: self.screen_width.clone(),
+            screen_height: self.screen_height.clone(),
+            screen: None,
+            action_space: self.action_space.clone(),
+            observation_space: self.observation_space.clone(),
+            state: self.state.clone(),
+            rand_random: self.rand_random.clone(),
+            metadata: self.metadata.clone(),
+        }
+    }
+}
+
 const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::Human,
     RenderMode::RgbArray,
@@ -302,7 +328,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         }
 
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
-        let reward: f64 = -1.0;
+        let reward: O64 = OrderedFloat(-1.0);
 
         self.state.update(position, velocity);
         self.render(self.render_mode);

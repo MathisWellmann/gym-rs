@@ -1,10 +1,16 @@
+use std::fmt::Debug;
+
+use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
-use crate::utils::renderer::{Render, RenderMode};
+use crate::utils::{
+    definitions::O64,
+    renderer::{Render, RenderMode},
+};
 
 /// TODO
-pub trait Env
+pub trait Env: Clone + PartialEq + Eq + Ord + Debug + Serialize
 where
     Self::Observation: Into<Vec<f64>>,
 {
@@ -53,29 +59,29 @@ where
 }
 
 const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
-    lower_bound: f64::NEG_INFINITY,
-    upper_bound: f64::INFINITY,
+    lower_bound: OrderedFloat(f64::NEG_INFINITY),
+    upper_bound: OrderedFloat(f64::INFINITY),
 });
 
 const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
 
 /// TODO
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ActionReward<T, E> {
     // TODO
     pub observation: T,
     // TODO
-    pub reward: f64,
+    pub reward: O64,
     // TODO
     pub done: bool,
     // TODO
     pub info: Option<E>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, PartialEq, Ord, PartialOrd, Eq)]
 pub struct RewardRange {
-    lower_bound: f64,
-    upper_bound: f64,
+    lower_bound: O64,
+    upper_bound: O64,
 }
 
 impl Default for RewardRange {
