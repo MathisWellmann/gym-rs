@@ -21,7 +21,7 @@ use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
 use sdl2::sys::gfx::framerate::{FPSmanager, FPS_DEFAULT};
-use sdl2::{EventPump, Sdl, TimerSubsystem};
+use sdl2::{EventPump, EventSubsystem, Sdl, TimerSubsystem};
 use serde::Serialize;
 
 ///Description:
@@ -182,6 +182,7 @@ pub struct Screen {
     pub canvas: WindowCanvas,
     pub fps_manager: FPSManager,
     pub event_pump: EventPump,
+    pub event_subsystem: EventSubsystem,
 }
 
 impl<'a> MountainCarEnv<'a> {
@@ -332,6 +333,9 @@ impl<'a> Env for MountainCarEnv<'a> {
             let canvas = window.into_canvas().accelerated().build().unwrap();
             let event_pump = context.event_pump().expect("Could not recieve event pump.");
             let mut fps_manager = FPSManager::new();
+            let event_subsystem = context
+                .event()
+                .expect("Event subsystem was not initialized.");
             fps_manager
                 .set_framerate(fps)
                 .expect("Framerate was unable to be set.");
@@ -339,6 +343,7 @@ impl<'a> Env for MountainCarEnv<'a> {
             let screen = Screen {
                 canvas,
                 event_pump,
+                event_subsystem,
                 fps_manager,
             };
 
@@ -358,7 +363,9 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         for event in events.poll_iter() {
             match event {
-                Event::Quit { .. } => panic!("Force quit happened!"),
+                Event::Quit { .. } => {
+                    panic!("MOUNTAIN CAR ANIMATION WAS FORCED TO EXIT!")
+                }
                 _ => (),
             }
         }
@@ -509,13 +516,14 @@ impl<'a> Env for MountainCarEnv<'a> {
     fn observation_space(&self) -> &Self::ObservationSpace {
         &self.observation_space
     }
+
+    fn close(&mut self) {
+        self.screen.take();
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use core::time;
-    use std::thread;
-
     use super::*;
     use rand::thread_rng;
 
@@ -535,7 +543,15 @@ mod tests {
             let ActionReward { done, .. } = mc.step(action);
             episode_length += 1;
             end = done;
-            thread::sleep(time::Duration::from_millis(100));
+            println!("episode_length: {}", episode_length);
+        }
+
+        mc.close();
+
+        for _ in 0..200 {
+            let action = rng.gen_range(0, 3);
+            mc.step(action);
+            episode_length += 1;
             println!("episode_length: {}", episode_length);
         }
     }
