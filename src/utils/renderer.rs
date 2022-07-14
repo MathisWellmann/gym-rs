@@ -1,8 +1,8 @@
 use derive_new::new;
-use serde::{ser::SerializeSeq, Serialize};
+use serde::Serialize;
 
 /// TODO
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Renderer<'a> {
     no_returns_render: &'a [RenderMode],
     single_render: &'a [RenderMode],
@@ -14,6 +14,18 @@ pub struct Renderer<'a> {
     // As a result, we opt to pass in the closure when needed.
     // Alternatively, if we continue using a function pointer, we would need to pass the instance itself.
     render_list: Vec<Render>,
+}
+
+impl<'a> Clone for Renderer<'a> {
+    fn clone(&self) -> Self {
+        let render_list = self.render_list.clone();
+        Self {
+            no_returns_render: &self.no_returns_render,
+            single_render: &self.single_render,
+            mode: self.mode.clone(),
+            render_list,
+        }
+    }
 }
 
 type RenderFn<'a> = &'a dyn Fn(RenderMode) -> Render;
@@ -69,27 +81,8 @@ pub struct Colour {
     b: usize,
 }
 /// TODO
-#[derive(Debug, new, PartialEq, PartialOrd, Clone, Eq, Ord)]
-pub struct RenderFrame([[Colour; 255]; 255]);
-
-impl Serialize for RenderFrame {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
-        for e in &self.0 {
-            let colour_array = e
-                .clone()
-                .map(|colours| {
-                    format!("| R: {} | G: {} | B: {} |", colours.r, colours.g, colours.b)
-                })
-                .join(",");
-            seq.serialize_element(&colour_array)?
-        }
-        todo!()
-    }
-}
+#[derive(Debug, new, PartialEq, PartialOrd, Clone, Eq, Ord, Serialize)]
+pub struct RenderFrame(Vec<Vec<Colour>>);
 
 /// TODO
 #[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize, Eq, Ord)]
