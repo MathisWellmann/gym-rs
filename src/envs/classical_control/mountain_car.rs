@@ -14,10 +14,12 @@ use nalgebra as na;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
+use sdl2::gfx::framerate::FPSManager;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::{Point, Rect};
+use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
+use sdl2::sys::gfx::framerate::{FPSmanager, FPS_DEFAULT};
 use sdl2::{Sdl, TimerSubsystem};
 use serde::Serialize;
 
@@ -133,7 +135,7 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
 #[derive(Debug, Clone, Serialize)]
 pub struct MountainCarMetadata {
     render_modes: &'static [RenderMode],
-    render_fps: usize,
+    render_fps: u32,
 }
 
 impl Default for MountainCarMetadata {
@@ -178,7 +180,7 @@ impl Observation {
 pub struct Screen {
     pub context: Sdl,
     pub canvas: WindowCanvas,
-    pub timer: TimerSubsystem,
+    pub fps_manager: FPSManager,
 }
 
 impl<'a> MountainCarEnv<'a> {
@@ -311,10 +313,11 @@ impl<'a> Env for MountainCarEnv<'a> {
         let min_position = self.min_position;
         let goal_position = self.goal_position;
         let state = self.state;
+        let fps = self.metadata().render_fps;
 
         self.screen.get_or_insert_with(|| {
-            let sdl_context = sdl2::init().unwrap();
-            let video_subsystem = sdl_context.video().unwrap();
+            let context = sdl2::init().unwrap();
+            let video_subsystem = context.video().unwrap();
             let mut window_builder =
                 video_subsystem.window("Mountain Car", screen_width, screen_height);
 
@@ -326,12 +329,15 @@ impl<'a> Env for MountainCarEnv<'a> {
 
             let window = window_builder.build().unwrap();
             let canvas = window.into_canvas().accelerated().build().unwrap();
-            let timer = sdl_context.timer().unwrap();
+            let mut fps_manager = FPSManager::new();
+            fps_manager
+                .set_framerate(fps)
+                .expect("Framerate was unable to be set.");
 
             let screen = Screen {
-                context: sdl_context,
+                context,
                 canvas,
-                timer,
+                fps_manager,
             };
 
             screen
@@ -345,6 +351,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let screen = self.screen.as_mut().unwrap();
         let canvas = &mut screen.canvas;
         let creator = canvas.texture_creator();
+        let fps_manager = &mut screen.fps_manager;
         let mut texture = creator
             .create_texture_target(
                 PixelFormatEnum::RGB24,
@@ -463,7 +470,9 @@ impl<'a> Env for MountainCarEnv<'a> {
         canvas
             .copy_ex(&texture, None, None, 0., None, false, true)
             .unwrap();
+
         canvas.present();
+        fps_manager.delay();
 
         Render::Human
     }
