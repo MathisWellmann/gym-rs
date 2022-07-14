@@ -580,7 +580,7 @@ mod tests {
     use rand::thread_rng;
 
     #[test]
-    fn mountain_car() {
+    fn test_run() {
         let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset();
 
@@ -606,5 +606,14 @@ mod tests {
             episode_length += 1;
             println!("episode_length: {}", episode_length);
         }
+    }
+
+    #[test]
+    fn test_clone() {
+        let mc = MountainCarEnv::new(RenderMode::None, None);
+        let _mc_cloned = mc.clone();
+
+        let mc2 = MountainCarEnv::new(RenderMode::Human, None);
+        let _mc2_cloned = mc2.clone();
     }
 }
