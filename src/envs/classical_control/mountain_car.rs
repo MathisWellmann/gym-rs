@@ -1,8 +1,10 @@
+use num_traits::Float;
 use std::fmt::Debug;
 use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, Discrete, Space};
+use crate::utils::definitions::O64;
 use crate::utils::math_ops;
 use crate::utils::renderer::{Render, RenderMode, Renderer};
 use crate::utils::seeding::rand_random;
@@ -11,6 +13,7 @@ use derive_new::new;
 use log::debug;
 use na::{Point2, Rotation2};
 use nalgebra as na;
+use ordered_float::OrderedFloat;
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand_pcg::Pcg64;
@@ -20,8 +23,7 @@ use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
-use sdl2::sys::gfx::framerate::{FPSmanager, FPS_DEFAULT};
-use sdl2::{EventPump, EventSubsystem, Sdl, TimerSubsystem};
+use sdl2::{EventPump, EventSubsystem};
 use serde::Serialize;
 
 ///Description:
@@ -72,23 +74,23 @@ use serde::Serialize;
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
 #[derive(Serialize, Derivative)]
-#[derivative(Debug)]
+#[derivative(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MountainCarEnv<'a> {
     /// TODO
-    pub min_position: f64,
+    pub min_position: O64,
     /// TODO
-    pub max_position: f64,
+    pub max_position: O64,
     /// TODO
-    pub max_speed: f64,
+    pub max_speed: O64,
     /// TODO
-    pub goal_position: f64,
+    pub goal_position: O64,
     /// TODO
-    pub goal_velocity: f64,
+    pub goal_velocity: O64,
 
     /// TODO
-    pub force: f64,
+    pub force: O64,
     /// TODO
-    pub gravity: f64,
+    pub gravity: O64,
 
     /// TODO
     pub low: Observation,
@@ -98,6 +100,12 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     pub render_mode: RenderMode,
     /// TODO
+    #[derivative(
+        Debug = "ignore",
+        PartialEq = "ignore",
+        PartialOrd = "ignore",
+        Ord = "ignore"
+    )]
     pub renderer: Renderer<'a>,
 
     // NOTE: Consider using SDL2 to reduce differences between gym_rs and the python implementation.
@@ -107,10 +115,13 @@ pub struct MountainCarEnv<'a> {
     pub screen_height: u32,
     /// TODO
     #[serde(skip_serializing)]
-    #[derivative(Debug = "ignore")]
+    #[derivative(
+        Debug = "ignore",
+        PartialEq = "ignore",
+        PartialOrd = "ignore",
+        Ord = "ignore"
+    )]
     pub screen: Option<Screen>,
-    /// TODO
-    pub isopen: bool,
 
     /// TODO
     pub action_space: spaces::Discrete,
@@ -122,6 +133,12 @@ pub struct MountainCarEnv<'a> {
 
     /// RANDOM NUMBER GENERATOR
     #[serde(skip_serializing)]
+    #[derivative(
+        Debug = "ignore",
+        PartialEq = "ignore",
+        PartialOrd = "ignore",
+        Ord = "ignore"
+    )]
     rand_random: Pcg64,
     metadata: MountainCarMetadata,
 }
@@ -133,7 +150,7 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::None,
 ];
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd)]
 pub struct MountainCarMetadata {
     render_modes: &'static [RenderMode],
     render_fps: u32,
@@ -149,30 +166,30 @@ impl Default for MountainCarMetadata {
 }
 
 /// Utility structure intended to reduce confusion around meaning of properties.
-#[derive(Debug, new, Copy, Clone, Serialize)]
+#[derive(Debug, new, Copy, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Observation {
-    position: f64,
-    velocity: f64,
+    position: O64,
+    velocity: O64,
 }
 
 impl From<Observation> for Vec<f64> {
     fn from(o: Observation) -> Self {
-        vec![o.position, o.velocity]
+        vec![o.position.into_inner(), o.velocity.into_inner()]
     }
 }
 
 impl Default for Observation {
     fn default() -> Self {
         Observation {
-            position: 0.,
-            velocity: 0.,
+            position: OrderedFloat(0.),
+            velocity: OrderedFloat(0.),
         }
     }
 }
 
 impl Observation {
     /// TODO
-    pub fn update(&mut self, position: f64, velocity: f64) {
+    pub fn update(&mut self, position: O64, velocity: O64) {
         self.position = position;
         self.velocity = velocity;
     }
@@ -186,24 +203,24 @@ pub struct Screen {
 }
 
 impl<'a> MountainCarEnv<'a> {
-    fn height(xs: &Vec<f64>) -> Vec<f64> {
+    fn height(xs: &Vec<O64>) -> Vec<O64> {
         xs.clone()
             .iter()
-            .map(|value| (3. * value).sin() * 0.45 + 0.55)
+            .map(|value| OrderedFloat((3. * value.into_inner()).sin() * 0.45 + 0.55))
             .collect()
     }
 
     pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
         let (rand_random, _) = rand_random(None);
 
-        let min_position = -1.2;
-        let max_position = 0.6;
-        let max_speed = 0.07;
-        let goal_position = 0.5;
-        let goal_velocity = goal_velocity.unwrap_or(0.);
+        let min_position = OrderedFloat(-1.2);
+        let max_position = OrderedFloat(0.6);
+        let max_speed = OrderedFloat(0.07);
+        let goal_position = OrderedFloat(0.5);
+        let goal_velocity = OrderedFloat(goal_velocity.unwrap_or(0.));
 
-        let force = 0.001;
-        let gravity = 0.0025;
+        let force = OrderedFloat(0.001);
+        let gravity = OrderedFloat(0.0025);
 
         let low = Observation::new(min_position, -max_speed);
         let high = Observation::new(max_position, max_speed);
@@ -218,7 +235,6 @@ impl<'a> MountainCarEnv<'a> {
         let screen_width = 600;
         let screen_height = 400;
         let screen = None;
-        let isopen = false;
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::Box::new(low, high);
@@ -250,7 +266,6 @@ impl<'a> MountainCarEnv<'a> {
             screen,
             screen_width,
             screen_height,
-            isopen,
 
             metadata,
         }
@@ -275,15 +290,15 @@ impl<'a> Env for MountainCarEnv<'a> {
         let mut position = self.state.position;
         let mut velocity = self.state.velocity;
 
-        velocity +=
-            (action as isize - 1) as f64 * self.force + (3.0 * position).cos() * (-self.gravity);
+        velocity += OrderedFloat((action as f64) - 1.) * self.force
+            + (OrderedFloat(3.) * position).cos() * (-self.gravity);
         velocity = math_ops::clip(velocity, -self.max_speed, self.max_speed);
 
         position += velocity;
         position = math_ops::clip(position, self.min_position, self.max_position);
 
-        if position == self.min_position && velocity < 0.0 {
-            velocity = 0.0;
+        if position == self.min_position && velocity < OrderedFloat(0.) {
+            velocity = OrderedFloat(0.);
         }
 
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
@@ -302,7 +317,10 @@ impl<'a> Env for MountainCarEnv<'a> {
 
     fn reset(&mut self) -> Self::Observation {
         let initial_position = Uniform::new::<f64, f64>(-0.6, -0.4);
-        self.state = Observation::new(self.rand_random.sample(initial_position), 0.0);
+        self.state = Observation::new(
+            OrderedFloat(self.rand_random.sample(initial_position)),
+            OrderedFloat(0.0),
+        );
         self.state
     }
 
@@ -351,7 +369,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         });
 
         let world_width = max_position - min_position;
-        let scale = screen_width as f64 / world_width;
+        let scale = OrderedFloat(screen_width as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
 
@@ -385,18 +403,20 @@ impl<'a> Env for MountainCarEnv<'a> {
 
                 let pos = state.position;
 
-                let xs: Vec<f64> = (0..100)
+                let xs: Vec<_> = (0..100)
                     .into_iter()
                     .map(|index| (((max_position - min_position) / 100.) * index as f64))
                     .map(|value| value + min_position)
                     .collect();
 
-                let ys: Vec<f64> = Self::height(&xs);
+                let ys: Vec<_> = Self::height(&xs);
                 let xys: Vec<Point> = zip(
                     xs.iter().map(|value| (value - min_position) * scale),
                     ys.iter().map(|value| value * scale),
                 )
-                .map(|(x, y)| Point::new(x.floor() as i32, y.floor() as i32))
+                .map(|(x, y)| {
+                    Point::new(x.floor().into_inner() as i32, y.floor().into_inner() as i32)
+                })
                 .collect();
 
                 texture_canvas.set_draw_color(Color::BLACK);
@@ -412,20 +432,22 @@ impl<'a> Env for MountainCarEnv<'a> {
                 let (l, r, t, b) = (-carwidth / 2, carwidth / 2, carheight, 0);
                 let coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
                     let point = Point2::new(x as f64, y as f64);
-                    let desired_angle = (3. * pos).cos();
+                    let desired_angle = (OrderedFloat(3.) * pos).cos().into_inner();
                     let rotation_matrix = Rotation2::new(desired_angle);
                     let rotated_point = rotation_matrix.transform_point(&point);
 
                     let (x, y) = (rotated_point.x, rotated_point.y);
 
-                    let new_x = x + (pos - min_position) * scale;
-                    let new_y = y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale;
+                    let new_x = OrderedFloat(x) + (pos - min_position) * scale;
+                    let new_y = OrderedFloat(y)
+                        + clearance
+                        + Self::height(&vec![pos]).pop().unwrap() * scale;
 
                     (new_x, new_y)
                 });
 
-                let coords_x = coords.map(|coord| coord.0.floor() as i16);
-                let coords_y = coords.map(|coord| coord.1.floor() as i16);
+                let coords_x = coords.map(|coord| coord.0.floor().into_inner() as i16);
+                let coords_y = coords.map(|coord| coord.1.floor().into_inner() as i16);
 
                 texture_canvas
                     .aa_polygon(&coords_x, &coords_y, Color::BLACK)
@@ -437,16 +459,17 @@ impl<'a> Env for MountainCarEnv<'a> {
 
                 for (x, y) in [(carwidth as f64 / 4., 0.), ((-carwidth as f64 / 4.), 0.)] {
                     let point = Point2::new(x as f64, y as f64);
-                    let desired_angle = (3. * pos).cos();
+                    let desired_angle = ((OrderedFloat(3.) * pos).cos()).into_inner();
                     let rotation_matrix = Rotation2::new(desired_angle);
                     let rotated_point = rotation_matrix.transform_point(&point);
 
-                    let (x, y) = (rotated_point.x, rotated_point.y);
+                    let (x, y) = (OrderedFloat(rotated_point.x), OrderedFloat(rotated_point.y));
 
                     let (wheel_x, wheel_y) = (
-                        (x + (pos - min_position) * scale).floor() as i16,
-                        (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale).floor()
-                            as i16,
+                        (x + (pos - min_position) * scale).floor().into_inner() as i16,
+                        (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale)
+                            .floor()
+                            .into_inner() as i16,
                     );
 
                     let rad = (carheight as f64 / 2.5).floor() as i16;
@@ -460,9 +483,12 @@ impl<'a> Env for MountainCarEnv<'a> {
                         .unwrap();
                 }
 
-                let flagx = ((goal_position - min_position) * scale).floor() as i16;
-                let flagy1 =
-                    (Self::height(&vec![goal_position]).pop().unwrap() * scale).floor() as i16;
+                let flagx = ((goal_position - min_position) * scale)
+                    .floor()
+                    .into_inner() as i16;
+                let flagy1 = (Self::height(&vec![goal_position]).pop().unwrap() * scale)
+                    .floor()
+                    .into_inner() as i16;
                 let flagy2 = flagy1 + 50;
                 texture_canvas
                     .vline(flagx, flagy1, flagy2, Color::BLACK)

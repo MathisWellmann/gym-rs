@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::Space;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub struct Discrete(pub usize);
 
 impl Space<usize> for Discrete {

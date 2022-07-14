@@ -2,7 +2,7 @@ use derive_new::new;
 use serde::{ser::SerializeSeq, Serialize};
 
 /// TODO
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Renderer<'a> {
     no_returns_render: &'a [RenderMode],
     single_render: &'a [RenderMode],
@@ -62,14 +62,14 @@ impl<'a> Renderer<'a> {
     }
 }
 
-#[derive(Debug, new, PartialEq, PartialOrd, Clone, Serialize)]
+#[derive(Debug, new, PartialEq, PartialOrd, Clone, Serialize, Eq, Ord)]
 pub struct Colour {
     r: usize,
     g: usize,
     b: usize,
 }
 /// TODO
-#[derive(Debug, new, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, new, PartialEq, PartialOrd, Clone, Eq, Ord)]
 pub struct RenderFrame([[Colour; 255]; 255]);
 
 impl Serialize for RenderFrame {
@@ -92,7 +92,7 @@ impl Serialize for RenderFrame {
 }
 
 /// TODO
-#[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize, Eq, Ord)]
 pub enum RenderMode {
     /// TODO
     Human,
@@ -119,7 +119,7 @@ impl RenderMode {
 }
 
 /// TODO
-#[derive(PartialEq, PartialOrd, Debug, Clone, Serialize)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Serialize, Ord, Eq)]
 pub enum Render {
     /// TODO
     Human,
