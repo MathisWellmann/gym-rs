@@ -575,7 +575,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let BoxR {
             lower_bound,
             upper_bound,
-        } = maybe_parse_reset_bounds(options, OrderedFloat(0.4), OrderedFloat(0.6));
+        } = maybe_parse_reset_bounds(options, OrderedFloat(-0.6), OrderedFloat(-0.4));
 
         let position = Uniform::new(lower_bound, upper_bound).sample(&mut self.rand_random);
 
@@ -631,14 +631,13 @@ mod tests {
         let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset(None, false, None);
 
-        let mut rng = thread_rng();
         let mut end: bool = false;
         let mut episode_length = 0;
         while !end {
             if episode_length > 200 {
                 break;
             }
-            let action = rng.gen_range(0..3);
+            let action = (&mut thread_rng()).gen_range(0..3);
             let ActionReward { done, .. } = mc.step(action);
             episode_length += 1;
             end = done;
@@ -648,7 +647,7 @@ mod tests {
         mc.close();
 
         for _ in 0..200 {
-            let action = rng.gen_range(0..3);
+            let action = (&mut thread_rng()).gen_range(0..3);
             mc.step(action);
             episode_length += 1;
             println!("episode_length: {}", episode_length);
