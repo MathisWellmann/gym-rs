@@ -241,10 +241,6 @@ impl<'a> MountainCarEnv<'a> {
     fn render(&mut self, mode: RenderMode) -> Renders {
         assert!(self.metadata.render_modes.contains(&mode));
 
-        if mode == RenderMode::None {
-            return Renders::None;
-        }
-
         let screen_width = self.screen_width;
         let screen_height = self.screen_height;
         let max_position = self.max_position;
