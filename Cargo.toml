@@ -24,8 +24,8 @@ exclude = [
 ]
 
 [dependencies]
-rand = "^0.7.3"
-rand_pcg = "0.2.1"
+rand = "0.8"
+rand_pcg = "0.3"
 log = "0.4.11"
 pretty_env_logger = "0.4.0"
 num = "0.3.0"
@@ -38,13 +38,5 @@ sdl2 = { version="0.35", features=["bundled", "gfx"] }
 serde = { version="1.0", features=["derive"] }
 derivative = { version="2.2" }
 nalgebra = "0.31"
-ordered-float = {version="3.0.0", features=["serde", "std", "rand"]}
+ordered-float = { version="3.0", features=["serde", "rand", "std"] }
 num-traits = "0.2"
-
-[[example]]
-name = "cart_pole"
-required-features = ["cosyne"]
-
-[[example]]
-name = "pendulum"
-required-features = ["cosyne"]

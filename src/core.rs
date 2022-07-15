@@ -4,9 +4,12 @@ use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
-use crate::utils::{
-    definitions::O64,
-    renderer::{Render, RenderMode},
+use crate::{
+    envs::classical_control::utils::MaybeParseResetBoundsOptions,
+    utils::{
+        definitions::O64,
+        renderer::{RenderMode, Renders},
+    },
 };
 
 /// TODO
@@ -14,46 +17,42 @@ pub trait Env: Clone + PartialEq + Eq + Ord + Debug + Serialize
 where
     Self::Observation: Into<Vec<f64>>,
 {
-    /// TODO
     type Action;
-    /// TODO
     type Observation;
-    /// TODO
     type Info;
-
-    /// TODO
     type Metadata;
-    /// TODO
     type ActionSpace;
-    /// TODO
     type ObservationSpace;
+    type ResetInfo;
 
     /// TODO
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
     /// TODO
-    fn reset(&mut self) -> Self::Observation;
+    fn reset(
+        &mut self,
+        seed: Option<u64>,
+        return_info: bool,
+        options: Option<MaybeParseResetBoundsOptions>,
+    ) -> (Self::Observation, Option<Self::ResetInfo>);
 
     /// TODO
-    fn render(&mut self, mode: RenderMode) -> Render;
-
-    fn close(&mut self);
+    fn render(&mut self, mode: RenderMode) -> Renders;
 
     /// TODO
     fn seed(&mut self, seed: Option<u64>) -> u64;
 
-    fn rand_random(&self) -> &Pcg64;
+    fn close(&mut self);
 
+    // Properties
     fn metadata(&self) -> &Self::Metadata;
-
+    fn rand_random(&self) -> &Pcg64;
     fn render_mode(&self) -> &RenderMode {
         DEFAULT_RENDER_MODE
     }
-
     fn reward_range(&self) -> &RewardRange {
         DEFAULT_REWARD_RANGE
     }
-
     fn action_space(&self) -> &Self::ActionSpace;
     fn observation_space(&self) -> &Self::ObservationSpace;
 }
@@ -74,6 +73,8 @@ pub struct ActionReward<T, E> {
     pub reward: O64,
     // TODO
     pub done: bool,
+    // TODO
+    pub truncated: bool,
     // TODO
     pub info: Option<E>,
 }

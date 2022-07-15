@@ -1,12 +1,14 @@
 use num_traits::Float;
+use rand::distributions::Uniform;
+use rand::prelude::Distribution;
 use std::fmt::Debug;
 use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
-use crate::spaces::{self, Discrete, Space};
+use crate::spaces::{self, BoxR, Discrete, Space};
 use crate::utils::definitions::O64;
 use crate::utils::math_ops;
-use crate::utils::renderer::{Render, RenderMode, Renderer};
+use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
@@ -14,8 +16,6 @@ use log::debug;
 use na::{Point2, Rotation2};
 use nalgebra as na;
 use ordered_float::OrderedFloat;
-use rand::distributions::Uniform;
-use rand::Rng;
 use rand_pcg::Pcg64;
 use sdl2::event::Event;
 use sdl2::gfx::framerate::FPSManager;
@@ -25,6 +25,8 @@ use sdl2::rect::Point;
 use sdl2::render::WindowCanvas;
 use sdl2::{EventPump, EventSubsystem};
 use serde::Serialize;
+
+use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
 
 ///Description:
 ///
@@ -126,7 +128,7 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     pub action_space: spaces::Discrete,
     /// TODO
-    pub observation_space: spaces::Box<Observation>,
+    pub observation_space: spaces::BoxR<Observation>,
 
     /// TODO
     pub state: Observation,
@@ -236,125 +238,11 @@ impl<'a> MountainCarEnv<'a> {
             .collect()
     }
 
-    pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
-        let (rand_random, _) = rand_random(None);
-
-        let min_position = OrderedFloat(-1.2);
-        let max_position = OrderedFloat(0.6);
-        let max_speed = OrderedFloat(0.07);
-        let goal_position = OrderedFloat(0.5);
-        let goal_velocity = OrderedFloat(goal_velocity.unwrap_or(0.));
-
-        let force = OrderedFloat(0.001);
-        let gravity = OrderedFloat(0.0025);
-
-        let low = Observation::new(min_position, -max_speed);
-        let high = Observation::new(max_position, max_speed);
-
-        let renderer = Renderer::new(render_mode, None, None);
-
-        // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
-        // loaded via function (the later would deviate more from the current interface, so we
-        // shouldn't use it).
-        let state = Observation::default();
-
-        let screen_width = 600;
-        let screen_height = 400;
-        let screen = None;
-
-        let action_space = spaces::Discrete(3);
-        let observation_space = spaces::Box::new(low, high);
-
-        let metadata = MountainCarMetadata::default();
-
-        Self {
-            min_position,
-            max_position,
-            max_speed,
-            goal_position,
-            goal_velocity,
-
-            force,
-            gravity,
-
-            low,
-            high,
-
-            render_mode,
-            renderer,
-
-            action_space,
-            observation_space,
-
-            state,
-            rand_random,
-
-            screen,
-            screen_width,
-            screen_height,
-
-            metadata,
-        }
-    }
-}
-
-impl<'a> Env for MountainCarEnv<'a> {
-    type Action = usize;
-    type Observation = Observation;
-    type Info = String;
-    type Metadata = MountainCarMetadata;
-    type ActionSpace = Discrete;
-    type ObservationSpace = spaces::Box<Self::Observation>;
-
-    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
-        assert!(
-            self.action_space.contains(action),
-            "{} (usize) invalid",
-            action
-        );
-
-        let mut position = self.state.position;
-        let mut velocity = self.state.velocity;
-
-        velocity += OrderedFloat((action as f64) - 1.) * self.force
-            + (OrderedFloat(3.) * position).cos() * (-self.gravity);
-        velocity = math_ops::clip(velocity, -self.max_speed, self.max_speed);
-
-        position += velocity;
-        position = math_ops::clip(position, self.min_position, self.max_position);
-
-        if position == self.min_position && velocity < OrderedFloat(0.) {
-            velocity = OrderedFloat(0.);
-        }
-
-        let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
-        let reward: O64 = OrderedFloat(-1.0);
-
-        self.state.update(position, velocity);
-        self.render(self.render_mode);
-
-        ActionReward {
-            observation: self.state,
-            reward,
-            done,
-            info: None,
-        }
-    }
-
-    fn reset(&mut self) -> Self::Observation {
-        let initial_position = Uniform::new::<f64, f64>(-0.6, -0.4);
-        self.state = Observation::new(
-            OrderedFloat(self.rand_random.sample(initial_position)),
-            OrderedFloat(0.0),
-        );
-        self.state
-    }
-
-    fn render(&mut self, mode: RenderMode) -> Render {
+    fn render(&mut self, mode: RenderMode) -> Renders {
         assert!(self.metadata.render_modes.contains(&mode));
 
         if mode == RenderMode::None {
-            return Render::None;
+            return Renders::None;
         }
 
         let screen_width = self.screen_width;
@@ -548,7 +436,162 @@ impl<'a> Env for MountainCarEnv<'a> {
         canvas.present();
         fps_manager.delay();
 
-        Render::Human
+        if mode == RenderMode::Human {
+            Renders::None
+        } else if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
+            todo!()
+        } else {
+            Renders::None
+        }
+    }
+
+    pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
+        let (rand_random, _) = rand_random(None);
+
+        let min_position = OrderedFloat(-1.2);
+        let max_position = OrderedFloat(0.6);
+        let max_speed = OrderedFloat(0.07);
+        let goal_position = OrderedFloat(0.5);
+        let goal_velocity = OrderedFloat(goal_velocity.unwrap_or(0.));
+
+        let force = OrderedFloat(0.001);
+        let gravity = OrderedFloat(0.0025);
+
+        let low = Observation::new(min_position, -max_speed);
+        let high = Observation::new(max_position, max_speed);
+
+        let renderer = Renderer::new(render_mode, None, None);
+
+        // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
+        // loaded via function (the later would deviate more from the current interface, so we
+        // shouldn't use it).
+        let state = Observation::default();
+
+        let screen_width = 600;
+        let screen_height = 400;
+        let screen = None;
+
+        let action_space = spaces::Discrete(3);
+        let observation_space = spaces::BoxR::new(low, high);
+
+        let metadata = MountainCarMetadata::default();
+
+        Self {
+            min_position,
+            max_position,
+            max_speed,
+            goal_position,
+            goal_velocity,
+
+            force,
+            gravity,
+
+            low,
+            high,
+
+            render_mode,
+            renderer,
+
+            action_space,
+            observation_space,
+
+            state,
+            rand_random,
+
+            screen,
+            screen_width,
+            screen_height,
+
+            metadata,
+        }
+    }
+}
+
+#[derive(new)]
+pub struct MountainCarResetInfo {}
+
+impl<'a> Env for MountainCarEnv<'a> {
+    type Action = usize;
+    type Observation = Observation;
+    type Info = String;
+    type Metadata = MountainCarMetadata;
+    type ActionSpace = Discrete;
+    type ObservationSpace = spaces::BoxR<Self::Observation>;
+    type ResetInfo = MountainCarResetInfo;
+
+    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
+        assert!(
+            self.action_space.contains(action),
+            "{} (usize) invalid",
+            action
+        );
+
+        let mut position = self.state.position;
+        let mut velocity = self.state.velocity;
+
+        velocity += OrderedFloat((action as f64) - 1.) * self.force
+            + (OrderedFloat(3.) * position).cos() * (-self.gravity);
+        velocity = math_ops::clip(velocity, -self.max_speed, self.max_speed);
+
+        position += velocity;
+        position = math_ops::clip(position, self.min_position, self.max_position);
+
+        if position == self.min_position && velocity < OrderedFloat(0.) {
+            velocity = OrderedFloat(0.);
+        }
+
+        let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
+        let reward: O64 = OrderedFloat(-1.0);
+
+        self.state.update(position, velocity);
+        self.render(self.render_mode);
+
+        ActionReward {
+            observation: self.state,
+            reward,
+            done,
+            truncated: false,
+            info: None,
+        }
+    }
+
+    fn render(&mut self, mode: RenderMode) -> Renders {
+        let render = self.render(mode);
+        if self.render_mode == RenderMode::None {
+            self.renderer.get_renders(render)
+        } else {
+            render
+        }
+    }
+
+    fn reset(
+        &mut self,
+        seed: Option<u64>,
+        return_info: bool,
+        options: Option<MaybeParseResetBoundsOptions>,
+    ) -> (Self::Observation, Option<Self::ResetInfo>) {
+        self.seed(seed);
+
+        let BoxR {
+            lower_bound,
+            upper_bound,
+        } = maybe_parse_reset_bounds(options, OrderedFloat(0.4), OrderedFloat(0.6));
+
+        let position = Uniform::new(lower_bound, upper_bound).sample(&mut self.rand_random);
+
+        self.state = Observation::new(position, OrderedFloat(0.));
+
+        let mode = self.render_mode;
+        let render = self.render(mode);
+
+        self.renderer.reset();
+        self.renderer.render_step(render);
+
+        if return_info {
+            (self.state, Some(MountainCarResetInfo::new()))
+        } else {
+            (self.state, None)
+        }
     }
 
     fn seed(&mut self, seed: Option<u64>) -> u64 {
@@ -557,12 +600,12 @@ impl<'a> Env for MountainCarEnv<'a> {
         new_rng_seed
     }
 
-    fn rand_random(&self) -> &Pcg64 {
-        &self.rand_random
-    }
-
     fn metadata(&self) -> &Self::Metadata {
         &self.metadata
+    }
+
+    fn rand_random(&self) -> &Pcg64 {
+        &self.rand_random
     }
 
     fn action_space(&self) -> &Self::ActionSpace {
@@ -581,12 +624,12 @@ impl<'a> Env for MountainCarEnv<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::thread_rng;
+    use rand::{thread_rng, Rng};
 
     #[test]
     fn test_run() {
         let mut mc = MountainCarEnv::new(RenderMode::Human, None);
-        let _state = mc.reset();
+        let _state = mc.reset(None, false, None);
 
         let mut rng = thread_rng();
         let mut end: bool = false;
@@ -595,7 +638,7 @@ mod tests {
             if episode_length > 200 {
                 break;
             }
-            let action = rng.gen_range(0, 3);
+            let action = rng.gen_range(0..3);
             let ActionReward { done, .. } = mc.step(action);
             episode_length += 1;
             end = done;
@@ -605,7 +648,7 @@ mod tests {
         mc.close();
 
         for _ in 0..200 {
-            let action = rng.gen_range(0, 3);
+            let action = rng.gen_range(0..3);
             mc.step(action);
             episode_length += 1;
             println!("episode_length: {}", episode_length);

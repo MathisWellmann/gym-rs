@@ -13,7 +13,7 @@ pub struct Renderer<'a> {
     //
     // As a result, we opt to pass in the closure when needed.
     // Alternatively, if we continue using a function pointer, we would need to pass the instance itself.
-    render_list: Vec<Render>,
+    render_list: Vec<RenderFrame>,
 }
 
 impl<'a> Clone for Renderer<'a> {
@@ -27,8 +27,6 @@ impl<'a> Clone for Renderer<'a> {
         }
     }
 }
-
-type RenderFn<'a> = &'a dyn Fn(RenderMode) -> Render;
 
 impl<'a> Renderer<'a> {
     /// TODO
@@ -46,25 +44,31 @@ impl<'a> Renderer<'a> {
     }
 
     /// TODO
-    pub fn render_step(&mut self, render: RenderFn<'a>) {
-        if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
-            let render_frame = render(self.mode);
-            if !self.no_returns_render.contains(&self.mode) {
-                self.render_list.push(render_frame)
+    pub fn render_step<'b>(&mut self, render: Renders) {
+        if self.mode != RenderMode::None
+            && !self.single_render.contains(&self.mode)
+            && !self.no_returns_render.contains(&self.mode)
+        {
+            match render {
+                Renders::SingleRgbArray(frame) => self.render_list.push(frame),
+                _ => (),
             }
         }
     }
 
     /// TODO
-    pub fn get_render(&mut self, render: RenderFn<'a>) -> Option<Vec<Render>> {
+    pub fn get_renders<'b>(&mut self, render: Renders) -> Renders {
         if self.single_render.contains(&self.mode) {
-            Some(vec![render(self.mode)])
+            match render {
+                Renders::SingleRgbArray(frame) => Renders::SingleRgbArray(frame),
+                _ => panic!("none single render mode was found in single_render"),
+            }
         } else if self.mode != RenderMode::None && !self.no_returns_render.contains(&self.mode) {
             let renders = self.render_list.clone();
             self.render_list = Vec::new();
-            Some(renders)
+            Renders::RgbArray(renders)
         } else {
-            None
+            Renders::None
         }
     }
 
@@ -113,9 +117,7 @@ impl RenderMode {
 
 /// TODO
 #[derive(PartialEq, PartialOrd, Debug, Clone, Serialize, Ord, Eq)]
-pub enum Render {
-    /// TODO
-    Human,
+pub enum Renders {
     /// TODO
     SingleRgbArray(RenderFrame),
     /// TODO

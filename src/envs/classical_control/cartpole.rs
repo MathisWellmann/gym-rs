@@ -1,3 +1,5 @@
+use crate::utils::definitions::O64;
+
 struct CartPole {
     gravity: O64,
     masscart: O64,
@@ -11,5 +13,5 @@ struct CartPole {
 
 enum KinematicsIntegrator {
     Euler,
-    Other
+    Other,
 }
