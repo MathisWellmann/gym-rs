@@ -48,10 +48,10 @@ impl<'a> Renderer<'a> {
     /// TODO
     pub fn render_step<'b>(&mut self, render: RenderFn<'b>) {
         if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
-            let frame = render(self.mode);
+            let render_return = render(self.mode);
             if !self.no_returns_render.contains(&self.mode) {
-                match frame {
-                    Renders::SingleRgbArray(a) => self.render_list.push(a),
+                match render_return {
+                    Renders::SingleRgbArray(frame) => self.render_list.push(frame),
                     _ => (),
                 }
             }
@@ -61,8 +61,7 @@ impl<'a> Renderer<'a> {
     /// TODO
     pub fn get_renders<'b>(&mut self, render: RenderFn<'b>) -> Renders {
         if self.single_render.contains(&self.mode) {
-            let frame = render(self.mode);
-            frame
+            render(self.mode)
         } else if self.mode != RenderMode::None && !self.no_returns_render.contains(&self.mode) {
             let renders = self.render_list.clone();
             self.render_list = Vec::new();
