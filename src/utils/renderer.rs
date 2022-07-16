@@ -77,15 +77,14 @@ impl<'a> Renderer<'a> {
     }
 }
 
-#[derive(Debug, new, PartialEq, PartialOrd, Clone, Serialize, Eq, Ord)]
-pub struct Colour {
-    r: usize,
-    g: usize,
-    b: usize,
+#[derive(Debug, new, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RenderColor {
+    RGB(u8, u8, u8),
 }
+
 /// TODO
-#[derive(Debug, new, PartialEq, PartialOrd, Clone, Eq, Ord, Serialize)]
-pub struct RenderFrame(Vec<Vec<Colour>>);
+#[derive(Debug, new, Clone, PartialEq, PartialOrd, Eq, Ord, Serialize)]
+pub struct RenderFrame(pub Vec<Vec<RenderColor>>);
 
 /// TODO
 #[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize, Eq, Ord)]

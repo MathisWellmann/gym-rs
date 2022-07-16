@@ -8,7 +8,7 @@ use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
 use crate::utils::definitions::O64;
 use crate::utils::math_ops;
-use crate::utils::renderer::{RenderMode, Renderer, Renders};
+use crate::utils::renderer::{RenderColor, RenderFrame, RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
@@ -431,7 +431,23 @@ impl<'a> MountainCarEnv<'a> {
         fps_manager.delay();
 
         if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
-            todo!()
+            let pixels = canvas
+                .read_pixels(None, PixelFormatEnum::RGB24)
+                .expect("pixels");
+
+            let colours: Vec<RenderColor> = pixels
+                .chunks(3)
+                .map(|chunk| RenderColor::RGB(chunk[0], chunk[1], chunk[2]))
+                .collect();
+
+            let pixels_array: Vec<Vec<RenderColor>> = colours
+                .chunks(screen_width as usize)
+                .map(|chunk| chunk.into())
+                .collect();
+
+            debug!("PIXELS: {:?}", pixels_array);
+
+            Renders::SingleRgbArray(RenderFrame::new(pixels_array))
         } else {
             Renders::None
         }
@@ -592,6 +608,8 @@ impl<'a> Env for MountainCarEnv<'a> {
         return_info: bool,
         options: Option<MaybeParseResetBoundsOptions>,
     ) -> (Self::Observation, Option<Self::ResetInfo>) {
+        pretty_env_logger::init();
+
         self.seed(seed);
 
         let BoxR {
@@ -669,7 +687,7 @@ mod tests {
 
     #[test]
     fn test_run() {
-        let mut mc = MountainCarEnv::new(RenderMode::Human, None);
+        let mut mc = MountainCarEnv::new(RenderMode::RgbArray, None);
         let _state = mc.reset(None, false, None);
 
         let mut end: bool = false;
