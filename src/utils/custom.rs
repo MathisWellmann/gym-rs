@@ -40,6 +40,13 @@ pub fn canvas_to_pixels(canvas: &mut WindowCanvas, screen_width: u32) -> RenderF
     RenderFrame::new(pixels_array)
 }
 
+pub struct Screen {
+    pub canvas: WindowCanvas,
+    pub fps_manager: FPSManager,
+    pub event_pump: EventPump,
+    pub event_subsystem: EventSubsystem,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

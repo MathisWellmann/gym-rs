@@ -6,7 +6,7 @@ use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::{self, canvas_to_pixels, O64};
+use crate::utils::custom::{self, canvas_to_pixels, Screen, O64};
 use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
@@ -21,8 +21,6 @@ use sdl2::gfx::framerate::FPSManager;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
-use sdl2::render::WindowCanvas;
-use sdl2::{EventPump, EventSubsystem};
 use serde::Serialize;
 
 use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
@@ -94,9 +92,9 @@ pub struct MountainCarEnv<'a> {
     pub gravity: O64,
 
     /// TODO
-    pub low: Observation,
+    pub low: MountainCarObservation,
     /// TODO
-    pub high: Observation,
+    pub high: MountainCarObservation,
 
     /// TODO
     pub render_mode: RenderMode,
@@ -127,10 +125,10 @@ pub struct MountainCarEnv<'a> {
     /// TODO
     pub action_space: spaces::Discrete,
     /// TODO
-    pub observation_space: spaces::BoxR<Observation>,
+    pub observation_space: spaces::BoxR<MountainCarObservation>,
 
     /// TODO
-    pub state: Observation,
+    pub state: MountainCarObservation,
 
     /// RANDOM NUMBER GENERATOR
     #[serde(skip_serializing)]
@@ -194,39 +192,32 @@ impl Default for MountainCarMetadata {
 
 /// Utility structure intended to reduce confusion around meaning of properties.
 #[derive(Debug, new, Copy, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Observation {
+pub struct MountainCarObservation {
     pub position: O64,
     pub velocity: O64,
 }
 
-impl From<Observation> for Vec<f64> {
-    fn from(o: Observation) -> Self {
+impl From<MountainCarObservation> for Vec<f64> {
+    fn from(o: MountainCarObservation) -> Self {
         vec![o.position.into_inner(), o.velocity.into_inner()]
     }
 }
 
-impl Default for Observation {
+impl Default for MountainCarObservation {
     fn default() -> Self {
-        Observation {
+        MountainCarObservation {
             position: OrderedFloat(0.),
             velocity: OrderedFloat(0.),
         }
     }
 }
 
-impl Observation {
+impl MountainCarObservation {
     /// TODO
     pub fn update(&mut self, position: O64, velocity: O64) {
         self.position = position;
         self.velocity = velocity;
     }
-}
-
-pub struct Screen {
-    pub canvas: WindowCanvas,
-    pub fps_manager: FPSManager,
-    pub event_pump: EventPump,
-    pub event_subsystem: EventSubsystem,
 }
 
 impl<'a> MountainCarEnv<'a> {
@@ -244,7 +235,7 @@ impl<'a> MountainCarEnv<'a> {
         max_position: O64,
         min_position: O64,
         goal_position: O64,
-        state: Observation,
+        state: MountainCarObservation,
         screen: &mut Option<Screen>,
         metadata: MountainCarMetadata,
     ) -> Renders {
@@ -448,15 +439,15 @@ impl<'a> MountainCarEnv<'a> {
         let force = OrderedFloat(0.001);
         let gravity = OrderedFloat(0.0025);
 
-        let low = Observation::new(min_position, -max_speed);
-        let high = Observation::new(max_position, max_speed);
+        let low = MountainCarObservation::new(min_position, -max_speed);
+        let high = MountainCarObservation::new(max_position, max_speed);
 
         let renderer = Renderer::new(render_mode, None, None);
 
         // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
         // loaded via function (the later would deviate more from the current interface, so we
         // shouldn't use it).
-        let state = Observation::default();
+        let state = MountainCarObservation::default();
 
         let screen_width = 600;
         let screen_height = 400;
@@ -503,7 +494,7 @@ pub struct MountainCarResetInfo {}
 
 impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
-    type Observation = Observation;
+    type Observation = MountainCarObservation;
     type Info = String;
     type Metadata = MountainCarMetadata;
     type ActionSpace = Discrete;
@@ -600,7 +591,7 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         let position = Uniform::new(lower_bound, upper_bound).sample(&mut self.rand_random);
 
-        self.state = Observation::new(position, OrderedFloat(0.));
+        self.state = MountainCarObservation::new(position, OrderedFloat(0.));
 
         self.renderer.reset();
 
