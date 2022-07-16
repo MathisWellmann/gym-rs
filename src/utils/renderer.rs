@@ -16,6 +16,8 @@ pub struct Renderer<'a> {
     render_list: Vec<RenderFrame>,
 }
 
+type RenderFn<'a> = &'a mut dyn FnMut(RenderMode) -> Renders;
+
 impl<'a> Clone for Renderer<'a> {
     fn clone(&self) -> Self {
         let render_list = self.render_list.clone();
@@ -44,25 +46,23 @@ impl<'a> Renderer<'a> {
     }
 
     /// TODO
-    pub fn render_step<'b>(&mut self, render: Renders) {
-        if self.mode != RenderMode::None
-            && !self.single_render.contains(&self.mode)
-            && !self.no_returns_render.contains(&self.mode)
-        {
-            match render {
-                Renders::SingleRgbArray(frame) => self.render_list.push(frame),
-                _ => (),
+    pub fn render_step<'b>(&mut self, render: RenderFn<'b>) {
+        if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
+            let frame = render(self.mode);
+            if !self.no_returns_render.contains(&self.mode) {
+                match frame {
+                    Renders::SingleRgbArray(a) => self.render_list.push(a),
+                    _ => (),
+                }
             }
         }
     }
 
     /// TODO
-    pub fn get_renders<'b>(&mut self, render: Renders) -> Renders {
+    pub fn get_renders<'b>(&mut self, render: RenderFn<'b>) -> Renders {
         if self.single_render.contains(&self.mode) {
-            match render {
-                Renders::SingleRgbArray(frame) => Renders::SingleRgbArray(frame),
-                _ => panic!("none single render mode was found in single_render"),
-            }
+            let frame = render(self.mode);
+            frame
         } else if self.mode != RenderMode::None && !self.no_returns_render.contains(&self.mode) {
             let renders = self.render_list.clone();
             self.render_list = Vec::new();

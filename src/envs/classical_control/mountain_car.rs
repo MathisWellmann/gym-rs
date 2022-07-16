@@ -178,7 +178,7 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::None,
 ];
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd, Copy)]
 pub struct MountainCarMetadata {
     render_modes: &'static [RenderMode],
     render_fps: u32,
@@ -238,18 +238,20 @@ impl<'a> MountainCarEnv<'a> {
             .collect()
     }
 
-    fn render(&mut self, mode: RenderMode) -> Renders {
-        assert!(self.metadata.render_modes.contains(&mode));
+    fn render(
+        mode: RenderMode,
+        screen_width: u32,
+        screen_height: u32,
+        max_position: O64,
+        min_position: O64,
+        goal_position: O64,
+        state: Observation,
+        screen: &mut Option<Screen>,
+        metadata: MountainCarMetadata,
+    ) -> Renders {
+        assert!(metadata.render_modes.contains(&mode));
 
-        let screen_width = self.screen_width;
-        let screen_height = self.screen_height;
-        let max_position = self.max_position;
-        let min_position = self.min_position;
-        let goal_position = self.goal_position;
-        let state = self.state;
-        let fps = self.metadata().render_fps;
-
-        self.screen.get_or_insert_with(|| {
+        screen.get_or_insert_with(|| {
             let context = sdl2::init().unwrap();
             let video_subsystem = context.video().unwrap();
             let mut window_builder =
@@ -269,7 +271,7 @@ impl<'a> MountainCarEnv<'a> {
                 .event()
                 .expect("Event subsystem was not initialized.");
             fps_manager
-                .set_framerate(fps)
+                .set_framerate(metadata.render_fps)
                 .expect("Framerate was unable to be set.");
 
             let screen = Screen {
@@ -287,11 +289,11 @@ impl<'a> MountainCarEnv<'a> {
         let carwidth = 40;
         let carheight = 20;
 
-        let screen = self.screen.as_mut().unwrap();
-        let canvas = &mut screen.canvas;
+        let unwrapped_screen = screen.as_mut().expect("Screen was not found");
+        let canvas = &mut unwrapped_screen.canvas;
         let creator = canvas.texture_creator();
-        let fps_manager = &mut screen.fps_manager;
-        let events = &mut screen.event_pump;
+        let fps_manager = &mut unwrapped_screen.fps_manager;
+        let events = &mut unwrapped_screen.event_pump;
 
         for event in events.poll_iter() {
             match event {
@@ -303,11 +305,7 @@ impl<'a> MountainCarEnv<'a> {
         }
 
         let mut texture = creator
-            .create_texture_target(
-                PixelFormatEnum::RGB24,
-                self.screen_width,
-                self.screen_height,
-            )
+            .create_texture_target(PixelFormatEnum::RGB24, screen_width, screen_height)
             .unwrap();
 
         canvas
@@ -432,9 +430,7 @@ impl<'a> MountainCarEnv<'a> {
         canvas.present();
         fps_manager.delay();
 
-        if mode == RenderMode::Human {
-            Renders::None
-        } else if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
+        if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
             todo!()
         } else {
             Renders::None
@@ -552,11 +548,41 @@ impl<'a> Env for MountainCarEnv<'a> {
     }
 
     fn render(&mut self, mode: RenderMode) -> Renders {
-        let render = self.render(mode);
         if self.render_mode == RenderMode::None {
-            self.renderer.get_renders(render)
+            let screen_width = self.screen_width;
+            let screen_height = self.screen_height;
+            let max_position = self.max_position;
+            let min_position = self.min_position;
+            let goal_position = self.goal_position;
+            let state = self.state;
+            let screen = &mut self.screen;
+            let metadata = self.metadata;
+
+            self.renderer.get_renders(&mut |internal_mode| {
+                Self::render(
+                    internal_mode,
+                    screen_width,
+                    screen_height,
+                    max_position,
+                    min_position,
+                    goal_position,
+                    state,
+                    screen,
+                    metadata,
+                )
+            })
         } else {
-            render
+            Self::render(
+                mode,
+                self.screen_width,
+                self.screen_height,
+                self.max_position,
+                self.min_position,
+                self.goal_position,
+                self.state,
+                &mut self.screen,
+                self.metadata,
+            )
         }
     }
 
@@ -577,11 +603,30 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         self.state = Observation::new(position, OrderedFloat(0.));
 
-        let mode = self.render_mode;
-        let render = self.render(mode);
-
         self.renderer.reset();
-        self.renderer.render_step(render);
+
+        let screen_width = self.screen_width;
+        let screen_height = self.screen_height;
+        let max_position = self.max_position;
+        let min_position = self.min_position;
+        let goal_position = self.goal_position;
+        let state = self.state;
+        let screen = &mut self.screen;
+        let metadata = self.metadata;
+
+        self.renderer.render_step(&mut |mode| {
+            Self::render(
+                mode,
+                screen_width,
+                screen_height,
+                max_position,
+                min_position,
+                goal_position,
+                state,
+                screen,
+                metadata,
+            )
+        });
 
         if return_info {
             (self.state, Some(MountainCarResetInfo::new()))
