@@ -13,9 +13,9 @@ use crate::{
 };
 
 /// TODO
-pub trait Env: Clone + PartialEq + Eq + Ord + Debug + Serialize
+pub trait Env: Clone + Debug + Serialize
 where
-    Self::Observation: Into<Vec<f64>>,
+    Vec<f64>: From<Self::Observation>,
 {
     type Action;
     type Observation;
@@ -37,9 +37,6 @@ where
 
     /// TODO
     fn render(&mut self, mode: RenderMode) -> Renders;
-
-    /// TODO
-    fn seed(&mut self, seed: Option<u64>) -> u64;
 
     fn close(&mut self);
 

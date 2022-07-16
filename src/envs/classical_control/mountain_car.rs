@@ -448,7 +448,7 @@ impl<'a> MountainCarEnv<'a> {
 impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
     type Observation = MountainCarObservation;
-    type Info = String;
+    type Info = ();
     type ActionSpace = Discrete;
     type ObservationSpace = spaces::BoxR<Self::Observation>;
     type ResetInfo = ();
@@ -529,7 +529,8 @@ impl<'a> Env for MountainCarEnv<'a> {
         return_info: bool,
         options: Option<MaybeParseResetBoundsOptions>,
     ) -> (Self::Observation, Option<Self::ResetInfo>) {
-        self.seed(seed);
+        let (rand_random, _) = rand_random(seed);
+        self.rand_random = rand_random;
 
         let BoxR {
             lower_bound,
@@ -566,12 +567,6 @@ impl<'a> Env for MountainCarEnv<'a> {
         } else {
             (self.state, None)
         }
-    }
-
-    fn seed(&mut self, seed: Option<u64>) -> u64 {
-        let (new_rng, new_rng_seed) = rand_random(seed);
-        self.rand_random = new_rng;
-        new_rng_seed
     }
 
     fn metadata(&self) -> &Metadata<Self> {

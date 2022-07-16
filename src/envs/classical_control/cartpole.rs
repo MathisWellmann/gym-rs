@@ -12,8 +12,10 @@ use rand::{
 
 use ordered_float::impl_rand::UniformOrdered;
 use rand_pcg::Pcg64;
+use serde::Serialize;
 
 use crate::{
+    core::Env,
     spaces::{BoxR, Discrete},
     utils::{
         custom::{DefaultSeed, Metadata, Screen, O64},
@@ -22,6 +24,7 @@ use crate::{
     },
 };
 
+#[derive(Debug, Clone, Serialize)]
 pub struct CartPoleEnv<'a> {
     pub gravity: O64,
     pub masscart: O64,
@@ -172,12 +175,26 @@ impl UniformSampler for UniformCartPoleObservation {
     }
 }
 
-#[derive(new, Debug, Clone, Copy)]
+#[derive(new, Debug, Clone, Copy, Serialize)]
 pub struct CartPoleObservation {
     x: O64,
     x_dot: O64,
     theta: O64,
     theta_dot: O64,
+}
+
+impl From<CartPoleObservation> for Vec<f64> {
+    fn from(observation: CartPoleObservation) -> Self {
+        (vec![
+            observation.x,
+            observation.x_dot,
+            observation.theta,
+            observation.theta_dot,
+        ])
+        .iter()
+        .map(|v| v.into_inner())
+        .collect()
+    }
 }
 
 impl DefaultSeed for CartPoleObservation {
@@ -205,7 +222,62 @@ impl Neg for CartPoleObservation {
     }
 }
 
+#[derive(Clone, Debug, Serialize)]
 pub enum KinematicsIntegrator {
     Euler,
     Other,
+}
+
+impl<'a> Env for CartPoleEnv<'a> {
+    type Action = usize;
+
+    type Observation = CartPoleObservation;
+
+    type Info = ();
+
+    type ActionSpace = Discrete;
+
+    type ObservationSpace = BoxR<CartPoleObservation>;
+
+    type ResetInfo = ();
+
+    fn step(
+        &mut self,
+        action: Self::Action,
+    ) -> crate::core::ActionReward<Self::Observation, Self::Info> {
+        todo!()
+    }
+
+    fn reset(
+        &mut self,
+        seed: Option<u64>,
+        return_info: bool,
+        options: Option<super::utils::MaybeParseResetBoundsOptions>,
+    ) -> (Self::Observation, Option<Self::ResetInfo>) {
+        todo!()
+    }
+
+    fn render(&mut self, mode: RenderMode) -> crate::utils::renderer::Renders {
+        todo!()
+    }
+
+    fn close(&mut self) {
+        todo!()
+    }
+
+    fn metadata(&self) -> &Metadata<Self> {
+        todo!()
+    }
+
+    fn rand_random(&self) -> &Pcg64 {
+        todo!()
+    }
+
+    fn action_space(&self) -> &Self::ActionSpace {
+        todo!()
+    }
+
+    fn observation_space(&self) -> &Self::ObservationSpace {
+        todo!()
+    }
 }
