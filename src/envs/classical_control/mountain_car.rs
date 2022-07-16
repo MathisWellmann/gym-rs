@@ -250,16 +250,18 @@ impl<'a> MountainCarEnv<'a> {
     ) -> Renders {
         assert!(metadata.render_modes.contains(&mode));
 
+        screen.load_gui();
+
         let world_width = max_position - min_position;
         let scale = OrderedFloat(screen.width as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
 
-        let unwrapped_screen = screen.gui.as_mut().expect("Screen was not found");
-        let canvas = &mut unwrapped_screen.canvas;
+        let gui = screen.gui.as_mut().expect("GUI not found.");
+        let canvas = &mut gui.canvas;
         let creator = canvas.texture_creator();
-        let fps_manager = &mut unwrapped_screen.fps_manager;
-        let events = &mut unwrapped_screen.event_pump;
+        let fps_manager = &mut gui.fps_manager;
+        let events = &mut gui.event_pump;
 
         for event in events.poll_iter() {
             match event {
@@ -417,12 +419,11 @@ impl<'a> MountainCarEnv<'a> {
 
         let state = MountainCarObservation::default(&mut rng);
 
-        let screen = Screen::new(400, 600, "MountainCar");
+        let metadata = Metadata::default();
+        let screen = Screen::new(400, 600, "MountainCar", metadata.render_fps, render_mode);
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
-
-        let metadata = Metadata::default();
 
         Self {
             min_position,
