@@ -1,7 +1,9 @@
+use std::os::linux::fs::MetadataExt;
+
 use crate::{
     spaces::{BoxR, Discrete},
     utils::{
-        custom::{Screen, O64},
+        custom::{Metadata, Screen, O64},
         renderer::{RenderMode, Renderer},
     },
 };
@@ -24,6 +26,30 @@ pub struct CartPole<'a> {
     pub screen_height: u32,
     pub screen: Option<Screen>,
     pub state: CartPoleObservation,
+}
+
+impl<'a> CartPole<'a> {
+    pub fn total_mass(&self) -> O64 {
+        self.masspole + self.masscart
+    }
+
+    pub fn polemass_length(&self) -> O64 {
+        self.masspole + self.length
+    }
+}
+
+const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[
+    RenderMode::Human,
+    RenderMode::RgbArray,
+    RenderMode::SingleRgbArray,
+    RenderMode::DepthArray,
+    RenderMode::SingleDepthArray,
+];
+
+impl<'a> Default for Metadata<CartPole<'a>> {
+    fn default() -> Self {
+        Metadata::new(CART_POLE_RENDER_MODES, 20)
+    }
 }
 
 pub struct CartPoleObservation {}

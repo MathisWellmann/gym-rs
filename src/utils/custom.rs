@@ -1,7 +1,14 @@
-use ordered_float::OrderedFloat;
-use sdl2::{pixels::PixelFormatEnum, render::WindowCanvas};
+use std::marker::PhantomData;
 
-use super::renderer::{RenderColor, RenderFrame};
+use derive_new::new;
+use ordered_float::OrderedFloat;
+use sdl2::{
+    gfx::framerate::FPSManager, pixels::PixelFormatEnum, render::WindowCanvas, EventPump,
+    EventSubsystem,
+};
+use serde::Serialize;
+
+use super::renderer::{RenderColor, RenderFrame, RenderMode};
 
 pub type O64 = OrderedFloat<f64>;
 
@@ -45,6 +52,13 @@ pub struct Screen {
     pub fps_manager: FPSManager,
     pub event_pump: EventPump,
     pub event_subsystem: EventSubsystem,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd, Copy, new)]
+pub struct Metadata<T> {
+    render_modes: &'static [RenderMode],
+    render_fps: u32,
+    marker: PhantomData<T>,
 }
 
 #[cfg(test)]

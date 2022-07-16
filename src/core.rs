@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::{
     envs::classical_control::utils::MaybeParseResetBoundsOptions,
     utils::{
-        custom::O64,
+        custom::{Metadata, O64},
         renderer::{RenderMode, Renders},
     },
 };
@@ -20,7 +20,6 @@ where
     type Action;
     type Observation;
     type Info;
-    type Metadata;
     type ActionSpace;
     type ObservationSpace;
     type ResetInfo;
@@ -45,7 +44,7 @@ where
     fn close(&mut self);
 
     // Properties
-    fn metadata(&self) -> &Self::Metadata;
+    fn metadata(&self) -> &Metadata<Self>;
     fn rand_random(&self) -> &Pcg64;
     fn render_mode(&self) -> &RenderMode {
         DEFAULT_RENDER_MODE

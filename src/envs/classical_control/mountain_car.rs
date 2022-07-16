@@ -6,7 +6,7 @@ use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::{self, canvas_to_pixels, Screen, O64};
+use crate::utils::custom::{self, canvas_to_pixels, Metadata, Screen, O64};
 use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
@@ -139,7 +139,7 @@ pub struct MountainCarEnv<'a> {
         Ord = "ignore"
     )]
     rand_random: Pcg64,
-    metadata: MountainCarMetadata,
+    metadata: Metadata<Self>,
 }
 
 impl<'a> Clone for MountainCarEnv<'a> {
@@ -175,18 +175,9 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::None,
 ];
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd, Copy)]
-pub struct MountainCarMetadata {
-    render_modes: &'static [RenderMode],
-    render_fps: u32,
-}
-
-impl Default for MountainCarMetadata {
+impl<'a> Default for Metadata<MountainCarEnv<'a>> {
     fn default() -> Self {
-        Self {
-            render_modes: MOUNTAIN_CAR_RENDER_MODES,
-            render_fps: 30,
-        }
+        Metadata::new(MOUNTAIN_CAR_RENDER_MODES, 30)
     }
 }
 
@@ -237,7 +228,7 @@ impl<'a> MountainCarEnv<'a> {
         goal_position: O64,
         state: MountainCarObservation,
         screen: &mut Option<Screen>,
-        metadata: MountainCarMetadata,
+        metadata: Metadata<Self>,
     ) -> Renders {
         assert!(metadata.render_modes.contains(&mode));
 
@@ -456,7 +447,7 @@ impl<'a> MountainCarEnv<'a> {
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
 
-        let metadata = MountainCarMetadata::default();
+        let metadata = Metadata::default();
 
         Self {
             min_position,
@@ -496,7 +487,6 @@ impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
     type Observation = MountainCarObservation;
     type Info = String;
-    type Metadata = MountainCarMetadata;
     type ActionSpace = Discrete;
     type ObservationSpace = spaces::BoxR<Self::Observation>;
     type ResetInfo = MountainCarResetInfo;
@@ -631,7 +621,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         new_rng_seed
     }
 
-    fn metadata(&self) -> &Self::Metadata {
+    fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
     }
 

@@ -99,6 +99,8 @@ pub enum RenderMode {
     Ansi,
     /// TODO
     None,
+    DepthArray,
+    SingleDepthArray,
 }
 
 impl Default for RenderMode {
