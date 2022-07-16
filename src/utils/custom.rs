@@ -1,4 +1,7 @@
 use ordered_float::OrderedFloat;
+use sdl2::{pixels::PixelFormatEnum, render::WindowCanvas};
+
+use super::renderer::{RenderColor, RenderFrame};
 
 pub type O64 = OrderedFloat<f64>;
 
@@ -17,6 +20,24 @@ pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) 
     } else {
         left_bound
     }
+}
+
+pub fn canvas_to_pixels(canvas: &mut WindowCanvas, screen_width: u32) -> RenderFrame {
+    let pixels = canvas
+        .read_pixels(None, PixelFormatEnum::RGB24)
+        .expect("pixels");
+
+    let colours: Vec<RenderColor> = pixels
+        .chunks(3)
+        .map(|chunk| RenderColor::RGB(chunk[0], chunk[1], chunk[2]))
+        .collect();
+
+    let pixels_array: Vec<Vec<RenderColor>> = colours
+        .chunks(screen_width as usize)
+        .map(|chunk| chunk.into())
+        .collect();
+
+    RenderFrame::new(pixels_array)
 }
 
 #[cfg(test)]
