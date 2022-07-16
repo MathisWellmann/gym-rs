@@ -5,6 +5,6 @@ pub mod renderer;
 /// TODO
 pub mod seeding;
 // TODO
-pub mod definitions;
+pub mod custom;
 /// TODO
 pub mod play;

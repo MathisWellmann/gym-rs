@@ -1,6 +1,6 @@
 use derive_new::new;
 
-use crate::{spaces::BoxR, utils::definitions::O64};
+use crate::{spaces::BoxR, utils::custom::O64};
 
 #[derive(new, PartialEq, Eq, PartialOrd, Debug, Clone, Ord)]
 pub struct MaybeParseResetBoundsOptions {

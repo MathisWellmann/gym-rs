@@ -6,8 +6,7 @@ use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::definitions::O64;
-use crate::utils::math_ops;
+use crate::utils::custom::{self, O64};
 use crate::utils::renderer::{RenderColor, RenderFrame, RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
@@ -539,10 +538,10 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         velocity += OrderedFloat((action as f64) - 1.) * self.force
             + (OrderedFloat(3.) * position).cos() * (-self.gravity);
-        velocity = math_ops::clip(velocity, -self.max_speed, self.max_speed);
+        velocity = custom::clip(velocity, -self.max_speed, self.max_speed);
 
         position += velocity;
-        position = math_ops::clip(position, self.min_position, self.max_position);
+        position = custom::clip(position, self.min_position, self.max_position);
 
         if position == self.min_position && velocity < OrderedFloat(0.) {
             velocity = OrderedFloat(0.);

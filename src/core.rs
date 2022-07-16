@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::{
     envs::classical_control::utils::MaybeParseResetBoundsOptions,
     utils::{
-        definitions::O64,
+        custom::O64,
         renderer::{RenderMode, Renders},
     },
 };

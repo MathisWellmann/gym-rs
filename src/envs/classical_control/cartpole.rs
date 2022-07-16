@@ -1,4 +1,4 @@
-use crate::utils::definitions::O64;
+use crate::utils::custom::O64;
 
 pub struct CartPole {
     pub gravity: O64,
