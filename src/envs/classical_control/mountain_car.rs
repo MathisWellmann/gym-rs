@@ -84,9 +84,6 @@ pub struct MountainCarEnv<'a> {
     pub force: O64,
     pub gravity: O64,
 
-    pub low: MountainCarObservation,
-    pub high: MountainCarObservation,
-
     pub render_mode: RenderMode,
     #[derivative(
         Debug = "ignore",
@@ -125,8 +122,6 @@ impl<'a> Clone for MountainCarEnv<'a> {
             goal_velocity: self.goal_velocity.clone(),
             force: self.force.clone(),
             gravity: self.gravity.clone(),
-            low: self.low.clone(),
-            high: self.high.clone(),
             render_mode: self.render_mode.clone(),
             renderer: self.renderer.clone(),
             screen: self.screen.clone(),
@@ -251,17 +246,16 @@ impl<'a> MountainCarEnv<'a> {
         assert!(metadata.render_modes.contains(&mode));
 
         screen.load_gui();
+        let gui_manager = screen.gui.as_mut().expect("GUI not found.");
+        let canvas = &mut gui_manager.canvas;
+        let fps_manager = &mut gui_manager.fps_manager;
+        let events = &mut gui_manager.event_pump;
+        let texture_creator = canvas.texture_creator();
 
         let world_width = max_position - min_position;
         let scale = OrderedFloat(screen.width as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
-
-        let gui = screen.gui.as_mut().expect("GUI not found.");
-        let canvas = &mut gui.canvas;
-        let creator = canvas.texture_creator();
-        let fps_manager = &mut gui.fps_manager;
-        let events = &mut gui.event_pump;
 
         for event in events.poll_iter() {
             match event {
@@ -272,7 +266,7 @@ impl<'a> MountainCarEnv<'a> {
             }
         }
 
-        let mut texture = creator
+        let mut texture = texture_creator
             .create_texture_target(PixelFormatEnum::RGB24, screen.width, screen.height)
             .unwrap();
 
@@ -434,9 +428,6 @@ impl<'a> MountainCarEnv<'a> {
 
             force,
             gravity,
-
-            low,
-            high,
 
             render_mode,
             renderer,

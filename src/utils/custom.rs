@@ -130,7 +130,7 @@ impl Screen {
                 }
             };
 
-            self.gui = Some(gui)
+            self.gui = Some(gui);
         }
     }
 }
