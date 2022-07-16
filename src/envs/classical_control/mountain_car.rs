@@ -1,48 +1,48 @@
 use num_traits::Float;
+use ordered_float::impl_rand::UniformOrdered;
+use rand::distributions::uniform::{SampleUniform, UniformSampler};
 use rand::distributions::Uniform;
 use rand::prelude::Distribution;
+use sdl2::gfx::primitives::DrawRenderer;
 use std::fmt::Debug;
 use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::{self, canvas_to_pixels, Metadata, Screen, O64};
+use crate::utils::custom::{self, canvas_to_pixels, DefaultSeed, Metadata, Screen, O64};
 use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
-use log::debug;
 use na::{Point2, Rotation2};
 use nalgebra as na;
 use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
 use sdl2::event::Event;
-use sdl2::gfx::framerate::FPSManager;
-use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Point;
 use serde::Serialize;
 
 use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
 
-///Description:
+/// # Description:
 ///
 ///  The agent (a car) is started at the bottom of a valley. For any given
 ///  state, the agent may choose to accelerate to the left, right or cease
 ///  any acceleration.
 ///
-///Source:
+/// # Source:
 ///
 ///  The environment appeared first in Andrew Moore's PhD Thesis (1990).
 ///  the source code in python: https://www.github.com/openai/gym
 ///
-///Observation:
+/// # Observation:
 ///
 ///  Num     Observation         Min     Max
 ///  0       Car Position        -1.2    0.6
 ///  1       Car Velocity        -0.07   0.07
 ///
-///Actions:
+/// # Actions:
 ///
 ///  In case of discrete action:
 ///  Num    Action
@@ -56,49 +56,38 @@ use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
 ///
 ///  Note: This does not affect the amount of velocity affected by the gravitational pull acting on the cart.
 ///
-///Reward:
+/// # Reward:
 ///
 ///  Reward of 0 is awarded if the agent reached the flag (position = 0.5)
 ///  on top of the mountain.
 ///  Reward of -1 is awarded if the position of the agent is less than 0.5.
 ///
-///Starting State:
+/// # Starting State:
 ///
 ///  The position of the car is assigned a uniform random value in
 ///  [-0.6, -0.4].
 ///  The starting velocity of the car is always assigned to 0.
 ///
-///Episode Termination:
+/// # Episode Termination:
 ///
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
 #[derive(Serialize, Derivative)]
 #[derivative(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MountainCarEnv<'a> {
-    /// TODO
     pub min_position: O64,
-    /// TODO
     pub max_position: O64,
-    /// TODO
     pub max_speed: O64,
-    /// TODO
     pub goal_position: O64,
-    /// TODO
     pub goal_velocity: O64,
 
-    /// TODO
     pub force: O64,
-    /// TODO
     pub gravity: O64,
 
-    /// TODO
     pub low: MountainCarObservation,
-    /// TODO
     pub high: MountainCarObservation,
 
-    /// TODO
     pub render_mode: RenderMode,
-    /// TODO
     #[derivative(
         Debug = "ignore",
         PartialEq = "ignore",
@@ -107,30 +96,14 @@ pub struct MountainCarEnv<'a> {
     )]
     pub renderer: Renderer<'a>,
 
-    // NOTE: Consider using SDL2 to reduce differences between gym_rs and the python implementation.
-    /// TODO
-    pub screen_width: u32,
-    /// TODO
-    pub screen_height: u32,
-    /// TODO
-    #[serde(skip_serializing)]
-    #[derivative(
-        Debug = "ignore",
-        PartialEq = "ignore",
-        PartialOrd = "ignore",
-        Ord = "ignore"
-    )]
-    pub screen: Option<Screen>,
+    #[derivative(PartialEq = "ignore", PartialOrd = "ignore", Ord = "ignore")]
+    pub screen: Screen,
 
-    /// TODO
     pub action_space: spaces::Discrete,
-    /// TODO
     pub observation_space: spaces::BoxR<MountainCarObservation>,
 
-    /// TODO
     pub state: MountainCarObservation,
 
-    /// RANDOM NUMBER GENERATOR
     #[serde(skip_serializing)]
     #[derivative(
         Debug = "ignore",
@@ -156,9 +129,7 @@ impl<'a> Clone for MountainCarEnv<'a> {
             high: self.high.clone(),
             render_mode: self.render_mode.clone(),
             renderer: self.renderer.clone(),
-            screen_width: self.screen_width.clone(),
-            screen_height: self.screen_height.clone(),
-            screen: None,
+            screen: self.screen.clone(),
             action_space: self.action_space.clone(),
             observation_space: self.observation_space.clone(),
             state: self.state.clone(),
@@ -188,18 +159,67 @@ pub struct MountainCarObservation {
     pub velocity: O64,
 }
 
-impl From<MountainCarObservation> for Vec<f64> {
-    fn from(o: MountainCarObservation) -> Self {
-        vec![o.position.into_inner(), o.velocity.into_inner()]
+pub struct UniformMountainCarObservation {
+    pub position_sampler: UniformOrdered<f64>,
+}
+
+impl UniformSampler for UniformMountainCarObservation {
+    type X = MountainCarObservation;
+
+    fn new<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        UniformMountainCarObservation {
+            position_sampler: UniformOrdered::new(low.borrow().position, high.borrow().position),
+        }
+    }
+
+    fn new_inclusive<B1, B2>(low: B1, high: B2) -> Self
+    where
+        B1: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+        B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
+    {
+        UniformMountainCarObservation {
+            position_sampler: UniformOrdered::new_inclusive(
+                low.borrow().position,
+                high.borrow().position,
+            ),
+        }
+    }
+
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
+        MountainCarObservation {
+            position: self.position_sampler.sample(rng),
+            velocity: OrderedFloat(0.),
+        }
     }
 }
 
-impl Default for MountainCarObservation {
-    fn default() -> Self {
-        MountainCarObservation {
-            position: OrderedFloat(0.),
-            velocity: OrderedFloat(0.),
-        }
+impl SampleUniform for MountainCarObservation {
+    type Sampler = UniformMountainCarObservation;
+}
+
+impl DefaultSeed for MountainCarObservation {
+    fn default(rng: &mut Pcg64) -> Self {
+        Uniform::new(
+            MountainCarObservation {
+                position: OrderedFloat(-0.6),
+                velocity: OrderedFloat(0.),
+            },
+            MountainCarObservation {
+                position: OrderedFloat(-0.4),
+                velocity: OrderedFloat(0.),
+            },
+        )
+        .sample(rng)
+    }
+}
+
+impl From<MountainCarObservation> for Vec<f64> {
+    fn from(o: MountainCarObservation) -> Self {
+        vec![o.position.into_inner(), o.velocity.into_inner()]
     }
 }
 
@@ -221,56 +241,21 @@ impl<'a> MountainCarEnv<'a> {
 
     fn render(
         mode: RenderMode,
-        screen_width: u32,
-        screen_height: u32,
         max_position: O64,
         min_position: O64,
         goal_position: O64,
         state: MountainCarObservation,
-        screen: &mut Option<Screen>,
-        metadata: Metadata<Self>,
+        screen: &mut Screen,
+        metadata: &Metadata<Self>,
     ) -> Renders {
         assert!(metadata.render_modes.contains(&mode));
 
-        screen.get_or_insert_with(|| {
-            let context = sdl2::init().unwrap();
-            let video_subsystem = context.video().unwrap();
-            let mut window_builder =
-                video_subsystem.window("Mountain Car", screen_width, screen_height);
-
-            window_builder.position_centered();
-
-            if mode != RenderMode::Human {
-                window_builder.hidden();
-            }
-
-            let window = window_builder.build().unwrap();
-            let canvas = window.into_canvas().accelerated().build().unwrap();
-            let event_pump = context.event_pump().expect("Could not recieve event pump.");
-            let mut fps_manager = FPSManager::new();
-            let event_subsystem = context
-                .event()
-                .expect("Event subsystem was not initialized.");
-            fps_manager
-                .set_framerate(metadata.render_fps)
-                .expect("Framerate was unable to be set.");
-
-            let screen = Screen {
-                canvas,
-                event_pump,
-                event_subsystem,
-                fps_manager,
-            };
-
-            screen
-        });
-
         let world_width = max_position - min_position;
-        let scale = OrderedFloat(screen_width as f64) / world_width;
+        let scale = OrderedFloat(screen.width as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
 
-        let unwrapped_screen = screen.as_mut().expect("Screen was not found");
+        let unwrapped_screen = screen.gui.as_mut().expect("Screen was not found");
         let canvas = &mut unwrapped_screen.canvas;
         let creator = canvas.texture_creator();
         let fps_manager = &mut unwrapped_screen.fps_manager;
@@ -286,7 +271,7 @@ impl<'a> MountainCarEnv<'a> {
         }
 
         let mut texture = creator
-            .create_texture_target(PixelFormatEnum::RGB24, screen_width, screen_height)
+            .create_texture_target(PixelFormatEnum::RGB24, screen.width, screen.height)
             .unwrap();
 
         canvas
@@ -314,11 +299,6 @@ impl<'a> MountainCarEnv<'a> {
 
                 texture_canvas.set_draw_color(Color::BLACK);
                 texture_canvas.draw_lines(xys.as_slice()).unwrap();
-
-                debug!("SCALE: {}", scale);
-                debug!("X: {:?}", xs[0..5].to_vec());
-                debug!("Y: {:?}", ys[0..5].to_vec());
-                debug!("{:?}", xys[0..5].to_vec());
 
                 let clearance = 10f64;
 
@@ -412,14 +392,14 @@ impl<'a> MountainCarEnv<'a> {
         fps_manager.delay();
 
         if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
-            Renders::SingleRgbArray(canvas_to_pixels(canvas, screen_width))
+            Renders::SingleRgbArray(canvas_to_pixels(canvas, screen.width))
         } else {
             Renders::None
         }
     }
 
     pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
-        let (rand_random, _) = rand_random(None);
+        let (mut rng, _) = rand_random(None);
 
         let min_position = OrderedFloat(-1.2);
         let max_position = OrderedFloat(0.6);
@@ -435,14 +415,9 @@ impl<'a> MountainCarEnv<'a> {
 
         let renderer = Renderer::new(render_mode, None, None);
 
-        // NOTE: Since rust requires statically typed properties, state must explicitly initiated or lazy
-        // loaded via function (the later would deviate more from the current interface, so we
-        // shouldn't use it).
-        let state = MountainCarObservation::default();
+        let state = MountainCarObservation::default(&mut rng);
 
-        let screen_width = 600;
-        let screen_height = 400;
-        let screen = None;
+        let screen = Screen::new(400, 600, "MountainCar");
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
@@ -469,19 +444,14 @@ impl<'a> MountainCarEnv<'a> {
             observation_space,
 
             state,
-            rand_random,
+            rand_random: rng,
 
             screen,
-            screen_width,
-            screen_height,
 
             metadata,
         }
     }
 }
-
-#[derive(new)]
-pub struct MountainCarResetInfo {}
 
 impl<'a> Env for MountainCarEnv<'a> {
     type Action = usize;
@@ -489,7 +459,7 @@ impl<'a> Env for MountainCarEnv<'a> {
     type Info = String;
     type ActionSpace = Discrete;
     type ObservationSpace = spaces::BoxR<Self::Observation>;
-    type ResetInfo = MountainCarResetInfo;
+    type ResetInfo = ();
 
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
         assert!(
@@ -528,21 +498,17 @@ impl<'a> Env for MountainCarEnv<'a> {
     }
 
     fn render(&mut self, mode: RenderMode) -> Renders {
-        if self.render_mode == RenderMode::None {
-            let screen_width = self.screen_width;
-            let screen_height = self.screen_height;
-            let max_position = self.max_position;
-            let min_position = self.min_position;
-            let goal_position = self.goal_position;
-            let state = self.state;
-            let screen = &mut self.screen;
-            let metadata = self.metadata;
+        let max_position = self.max_position;
+        let min_position = self.min_position;
+        let goal_position = self.goal_position;
+        let state = self.state;
+        let screen = &mut self.screen;
+        let metadata = &self.metadata;
 
-            self.renderer.get_renders(&mut |internal_mode| {
+        if self.render_mode == RenderMode::None {
+            let render_fn = &mut |internal_mode| {
                 Self::render(
                     internal_mode,
-                    screen_width,
-                    screen_height,
                     max_position,
                     min_position,
                     goal_position,
@@ -550,18 +516,17 @@ impl<'a> Env for MountainCarEnv<'a> {
                     screen,
                     metadata,
                 )
-            })
+            };
+            self.renderer.get_renders(render_fn)
         } else {
             Self::render(
                 mode,
-                self.screen_width,
-                self.screen_height,
-                self.max_position,
-                self.min_position,
-                self.goal_position,
-                self.state,
-                &mut self.screen,
-                self.metadata,
+                max_position,
+                min_position,
+                goal_position,
+                state,
+                screen,
+                metadata,
             )
         }
     }
@@ -585,20 +550,16 @@ impl<'a> Env for MountainCarEnv<'a> {
 
         self.renderer.reset();
 
-        let screen_width = self.screen_width;
-        let screen_height = self.screen_height;
         let max_position = self.max_position;
         let min_position = self.min_position;
         let goal_position = self.goal_position;
         let state = self.state;
         let screen = &mut self.screen;
-        let metadata = self.metadata;
+        let metadata = &self.metadata;
 
         self.renderer.render_step(&mut |mode| {
             Self::render(
                 mode,
-                screen_width,
-                screen_height,
                 max_position,
                 min_position,
                 goal_position,
@@ -609,7 +570,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         });
 
         if return_info {
-            (self.state, Some(MountainCarResetInfo::new()))
+            (self.state, Some(()))
         } else {
             (self.state, None)
         }
@@ -638,7 +599,7 @@ impl<'a> Env for MountainCarEnv<'a> {
     }
 
     fn close(&mut self) {
-        self.screen.take();
+        self.screen.gui.take();
     }
 }
 
