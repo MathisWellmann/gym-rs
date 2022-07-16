@@ -686,7 +686,7 @@ mod tests {
 
     #[test]
     fn test_run() {
-        let mut mc = MountainCarEnv::new(RenderMode::RgbArray, None);
+        let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset(None, false, None);
 
         let mut end: bool = false;
