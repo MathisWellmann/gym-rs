@@ -591,8 +591,6 @@ impl<'a> Env for MountainCarEnv<'a> {
         return_info: bool,
         options: Option<MaybeParseResetBoundsOptions>,
     ) -> (Self::Observation, Option<Self::ResetInfo>) {
-        pretty_env_logger::init();
-
         self.seed(seed);
 
         let BoxR {
@@ -670,6 +668,7 @@ mod tests {
 
     #[test]
     fn test_run() {
+        pretty_env_logger::init();
         let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset(None, false, None);
 
