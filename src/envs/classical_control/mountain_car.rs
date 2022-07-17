@@ -9,7 +9,7 @@ use std::iter::zip;
 
 use crate::core::{ActionReward, Env};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::{self, canvas_to_pixels, DefaultSeed, Metadata, Screen, O64};
+use crate::utils::custom::{self, Metadata, Sample, Screen, ScreenGuiTransformations, O64};
 use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
@@ -18,12 +18,9 @@ use na::{Point2, Rotation2};
 use nalgebra as na;
 use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
-use sdl2::event::Event;
-use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::pixels::Color;
 use sdl2::rect::Point;
 use serde::Serialize;
-
-use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
 
 /// # Description:
 ///
@@ -73,7 +70,7 @@ use super::utils::{maybe_parse_reset_bounds, MaybeParseResetBoundsOptions};
 ///  The car position is more than 0.5
 ///  Episode length is greater than 200
 #[derive(Serialize, Derivative)]
-#[derivative(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derivative(Debug)]
 pub struct MountainCarEnv<'a> {
     pub min_position: O64,
     pub max_position: O64,
@@ -85,15 +82,8 @@ pub struct MountainCarEnv<'a> {
     pub gravity: O64,
 
     pub render_mode: RenderMode,
-    #[derivative(
-        Debug = "ignore",
-        PartialEq = "ignore",
-        PartialOrd = "ignore",
-        Ord = "ignore"
-    )]
     pub renderer: Renderer<'a>,
 
-    #[derivative(PartialEq = "ignore", PartialOrd = "ignore", Ord = "ignore")]
     pub screen: Screen,
 
     pub action_space: spaces::Discrete,
@@ -102,12 +92,7 @@ pub struct MountainCarEnv<'a> {
     pub state: MountainCarObservation,
 
     #[serde(skip_serializing)]
-    #[derivative(
-        Debug = "ignore",
-        PartialEq = "ignore",
-        PartialOrd = "ignore",
-        Ord = "ignore"
-    )]
+    #[derivative(Debug = "ignore")]
     rand_random: Pcg64,
     metadata: Metadata<Self>,
 }
@@ -196,19 +181,22 @@ impl SampleUniform for MountainCarObservation {
     type Sampler = UniformMountainCarObservation;
 }
 
-impl DefaultSeed for MountainCarObservation {
-    fn default(rng: &mut Pcg64) -> Self {
-        Uniform::new(
-            MountainCarObservation {
-                position: OrderedFloat(-0.6),
-                velocity: OrderedFloat(0.),
-            },
-            MountainCarObservation {
-                position: OrderedFloat(-0.4),
-                velocity: OrderedFloat(0.),
-            },
-        )
-        .sample(rng)
+impl Sample for MountainCarObservation {
+    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self {
+        let BoxR { low, high } = bounds.unwrap_or({
+            BoxR::new(
+                MountainCarObservation {
+                    position: OrderedFloat(-0.6),
+                    velocity: OrderedFloat(0.),
+                },
+                MountainCarObservation {
+                    position: OrderedFloat(-0.4),
+                    velocity: OrderedFloat(0.),
+                },
+            )
+        });
+
+        Uniform::new(low, high).sample(rng)
     }
 }
 
@@ -246,34 +234,17 @@ impl<'a> MountainCarEnv<'a> {
         assert!(metadata.render_modes.contains(&mode));
 
         screen.load_gui();
-        let gui_manager = screen.gui.as_mut().expect("GUI not found.");
-        let canvas = &mut gui_manager.canvas;
-        let fps_manager = &mut gui_manager.fps_manager;
-        let events = &mut gui_manager.event_pump;
-        let texture_creator = canvas.texture_creator();
+        screen.consume_events();
 
         let world_width = max_position - min_position;
         let scale = OrderedFloat(screen.width as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
 
-        for event in events.poll_iter() {
-            match event {
-                Event::Quit { .. } => {
-                    panic!("MOUNTAIN CAR ANIMATION WAS FORCED TO EXIT!")
-                }
-                _ => (),
-            }
-        }
-
-        let mut texture = texture_creator
-            .create_texture_target(PixelFormatEnum::RGB24, screen.width, screen.height)
-            .unwrap();
-
-        canvas
-            .with_texture_canvas(&mut texture, |texture_canvas| {
-                texture_canvas.set_draw_color(Color::WHITE);
-                texture_canvas.clear();
+        screen.draw_on_canvas(
+            |internal_canvas| {
+                internal_canvas.set_draw_color(Color::WHITE);
+                internal_canvas.clear();
 
                 let pos = state.position;
 
@@ -293,8 +264,8 @@ impl<'a> MountainCarEnv<'a> {
                 })
                 .collect();
 
-                texture_canvas.set_draw_color(Color::BLACK);
-                texture_canvas.draw_lines(xys.as_slice()).unwrap();
+                internal_canvas.set_draw_color(Color::BLACK);
+                internal_canvas.draw_lines(xys.as_slice()).unwrap();
 
                 let clearance = 10f64;
 
@@ -318,11 +289,11 @@ impl<'a> MountainCarEnv<'a> {
                 let coords_x = coords.map(|coord| coord.0.floor().into_inner() as i16);
                 let coords_y = coords.map(|coord| coord.1.floor().into_inner() as i16);
 
-                texture_canvas
+                internal_canvas
                     .aa_polygon(&coords_x, &coords_y, Color::BLACK)
                     .unwrap();
 
-                texture_canvas
+                internal_canvas
                     .filled_polygon(&coords_x, &coords_y, Color::BLACK)
                     .unwrap();
 
@@ -343,11 +314,11 @@ impl<'a> MountainCarEnv<'a> {
 
                     let rad = (carheight as f64 / 2.5).floor() as i16;
 
-                    texture_canvas
+                    internal_canvas
                         .aa_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
                         .unwrap();
 
-                    texture_canvas
+                    internal_canvas
                         .filled_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
                         .unwrap();
                 }
@@ -359,39 +330,29 @@ impl<'a> MountainCarEnv<'a> {
                     .floor()
                     .into_inner() as i16;
                 let flagy2 = flagy1 + 50;
-                texture_canvas
+                internal_canvas
                     .vline(flagx, flagy1, flagy2, Color::BLACK)
                     .unwrap();
 
-                texture_canvas
+                internal_canvas
                     .aa_polygon(
                         &vec![flagx, flagx, flagx + 25],
                         &vec![flagy2, flagy2 - 10, flagy2 - 5],
                         Color::RGB(204, 204, 0),
                     )
                     .unwrap();
-                texture_canvas
+                internal_canvas
                     .filled_polygon(
                         &vec![flagx, flagx, flagx + 25],
                         &vec![flagy2, flagy2 - 10, flagy2 - 5],
                         Color::RGB(204, 204, 0),
                     )
                     .unwrap();
-            })
-            .unwrap();
+            },
+            ScreenGuiTransformations::default(),
+        );
 
-        canvas
-            .copy_ex(&texture, None, None, 0., None, false, true)
-            .unwrap();
-
-        canvas.present();
-        fps_manager.delay();
-
-        if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
-            Renders::SingleRgbArray(canvas_to_pixels(canvas, screen.width))
-        } else {
-            Renders::None
-        }
+        screen.render(mode)
     }
 
     pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
@@ -411,7 +372,7 @@ impl<'a> MountainCarEnv<'a> {
 
         let renderer = Renderer::new(render_mode, None, None);
 
-        let state = MountainCarObservation::default(&mut rng);
+        let state = MountainCarObservation::sample_between(&mut rng, None);
 
         let metadata = Metadata::default();
         let screen = Screen::new(400, 600, "MountainCar", metadata.render_fps, render_mode);
@@ -527,19 +488,12 @@ impl<'a> Env for MountainCarEnv<'a> {
         &mut self,
         seed: Option<u64>,
         return_info: bool,
-        options: Option<MaybeParseResetBoundsOptions>,
+        options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>) {
         let (rand_random, _) = rand_random(seed);
         self.rand_random = rand_random;
 
-        let BoxR {
-            lower_bound,
-            upper_bound,
-        } = maybe_parse_reset_bounds(options, OrderedFloat(-0.6), OrderedFloat(-0.4));
-
-        let position = Uniform::new(lower_bound, upper_bound).sample(&mut self.rand_random);
-
-        self.state = MountainCarObservation::new(position, OrderedFloat(0.));
+        self.state = MountainCarObservation::sample_between(&mut self.rand_random, options);
 
         self.renderer.reset();
 

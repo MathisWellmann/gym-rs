@@ -5,7 +5,7 @@ use rand_pcg::Pcg64;
 use serde::Serialize;
 
 use crate::{
-    envs::classical_control::utils::MaybeParseResetBoundsOptions,
+    spaces::BoxR,
     utils::{
         custom::{Metadata, O64},
         renderer::{RenderMode, Renders},
@@ -32,7 +32,7 @@ where
         &mut self,
         seed: Option<u64>,
         return_info: bool,
-        options: Option<MaybeParseResetBoundsOptions>,
+        options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>);
 
     /// TODO

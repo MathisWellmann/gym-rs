@@ -12,15 +12,16 @@ use rand::{
 
 use ordered_float::impl_rand::UniformOrdered;
 use rand_pcg::Pcg64;
+use sdl2::{pixels::PixelFormatEnum, render::Texture};
 use serde::Serialize;
 
 use crate::{
     core::Env,
     spaces::{BoxR, Discrete},
     utils::{
-        custom::{DefaultSeed, Metadata, Screen, O64},
-        renderer::{RenderMode, Renderer},
-        seeding::rand_random,
+        custom::{Metadata, Sample, Screen, O64},
+        renderer::{RenderMode, Renderer, Renders},
+        seeding::{self, rand_random},
     },
 };
 
@@ -39,15 +40,16 @@ pub struct CartPoleEnv<'a> {
     pub observation_space: BoxR<CartPoleObservation>,
     pub render_mode: RenderMode,
     pub renderer: Renderer<'a>,
-    pub screen_width: u32,
-    pub screen_height: u32,
-    pub screen: Option<Screen>,
+    pub screen: Screen,
     pub state: CartPoleObservation,
+    pub metadata: Metadata<Self>,
+    #[serde(skip_serializing)]
+    rand_random: Pcg64,
 }
 
 impl<'a> CartPoleEnv<'a> {
     pub fn new(render_mode: RenderMode) -> Self {
-        let (mut rng, _) = rand_random(None);
+        let (mut rand_random, _) = rand_random(None);
 
         let gravity = OrderedFloat(9.8);
         let masscart = OrderedFloat(1.0);
@@ -72,11 +74,10 @@ impl<'a> CartPoleEnv<'a> {
 
         let renderer = Renderer::new(render_mode, None, None);
 
-        let screen_width = 600;
-        let screen_height = 400;
-        let screen = None;
+        let metadata = Metadata::default();
+        let screen = Screen::new(600, 400, "Cart Pole", metadata.render_fps, render_mode);
 
-        let state = CartPoleObservation::default(&mut rng);
+        let state = CartPoleObservation::sample_between(&mut rand_random, None);
 
         Self {
             gravity,
@@ -92,10 +93,10 @@ impl<'a> CartPoleEnv<'a> {
             observation_space,
             render_mode,
             renderer,
-            screen_width,
-            screen_height,
             screen,
             state,
+            metadata,
+            rand_random,
         }
     }
 
@@ -105,6 +106,35 @@ impl<'a> CartPoleEnv<'a> {
 
     pub fn polemass_length(&self) -> O64 {
         self.masspole + self.length
+    }
+
+    pub fn render(
+        mode: RenderMode,
+        screen: &mut Screen,
+        metadata: Metadata<Self>,
+        x_threshold: O64,
+        length: O64,
+    ) -> Renders {
+        assert!(metadata.render_modes.contains(&mode));
+
+        screen.load_gui();
+        screen.consume_events();
+
+        let gui_manager = screen.gui.as_mut().expect("GUI not found.");
+        let canvas = &mut gui_manager.canvas;
+        let texture_creator = canvas.texture_creator();
+        let mut texture = texture_creator
+            .create_texture_target(PixelFormatEnum::RGB24, screen.width, screen.height)
+            .expect("Texture was unable to be created");
+
+        let world_width = x_threshold * 2.;
+        let scale = OrderedFloat(screen.width as f64) / world_width;
+        let polewidth = OrderedFloat(10.);
+        let polelen = scale * 2. * length;
+        let cartwidth = OrderedFloat(50.);
+        let cartheight = OrderedFloat(30.);
+
+        todo!()
     }
 }
 
@@ -175,7 +205,7 @@ impl UniformSampler for UniformCartPoleObservation {
     }
 }
 
-#[derive(new, Debug, Clone, Copy, Serialize)]
+#[derive(new, Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub struct CartPoleObservation {
     x: O64,
     x_dot: O64,
@@ -197,15 +227,19 @@ impl From<CartPoleObservation> for Vec<f64> {
     }
 }
 
-impl DefaultSeed for CartPoleObservation {
-    fn default(rng: &mut Pcg64) -> Self {
-        let bound = CartPoleObservation {
-            x: OrderedFloat(0.5),
-            x_dot: OrderedFloat(0.5),
-            theta: OrderedFloat(0.5),
-            theta_dot: OrderedFloat(0.5),
-        };
-        Uniform::new(-bound, bound).sample(rng)
+impl Sample for CartPoleObservation {
+    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self {
+        let BoxR { low, high } = bounds.unwrap_or({
+            let observation_bound = CartPoleObservation::new(
+                OrderedFloat(0.5),
+                OrderedFloat(0.5),
+                OrderedFloat(0.5),
+                OrderedFloat(0.5),
+            );
+            BoxR::new(-observation_bound, observation_bound)
+        });
+
+        Uniform::new(low, high).sample(rng)
     }
 }
 
@@ -252,8 +286,15 @@ impl<'a> Env for CartPoleEnv<'a> {
         &mut self,
         seed: Option<u64>,
         return_info: bool,
-        options: Option<super::utils::MaybeParseResetBoundsOptions>,
+        options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>) {
+        let (rand_random, _) = seeding::rand_random(seed);
+        self.rand_random = rand_random;
+
+        self.state = CartPoleObservation::sample_between(&mut self.rand_random, options);
+
+        self.renderer.reset();
+
         todo!()
     }
 
@@ -262,22 +303,22 @@ impl<'a> Env for CartPoleEnv<'a> {
     }
 
     fn close(&mut self) {
-        todo!()
+        self.screen.gui.take();
     }
 
     fn metadata(&self) -> &Metadata<Self> {
-        todo!()
+        &self.metadata
     }
 
     fn rand_random(&self) -> &Pcg64 {
-        todo!()
+        &self.rand_random
     }
 
     fn action_space(&self) -> &Self::ActionSpace {
-        todo!()
+        &self.action_space
     }
 
     fn observation_space(&self) -> &Self::ObservationSpace {
-        todo!()
+        &self.observation_space
     }
 }

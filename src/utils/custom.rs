@@ -3,14 +3,21 @@ use std::marker::PhantomData;
 use derivative::Derivative;
 use derive_new::new;
 use ordered_float::OrderedFloat;
+use rand::distributions::uniform::SampleUniform;
 use rand_pcg::Pcg64;
 use sdl2::{
-    gfx::framerate::FPSManager, pixels::PixelFormatEnum, render::WindowCanvas, EventPump,
-    EventSubsystem,
+    event::Event,
+    gfx::framerate::FPSManager,
+    pixels::PixelFormatEnum,
+    rect::{Point, Rect},
+    render::WindowCanvas,
+    EventPump, EventSubsystem,
 };
 use serde::Serialize;
 
-use super::renderer::{RenderColor, RenderFrame, RenderMode};
+use crate::spaces::BoxR;
+
+use super::renderer::{RenderColor, RenderFrame, RenderMode, Renders};
 
 pub type O64 = OrderedFloat<f64>;
 
@@ -56,6 +63,37 @@ pub struct ScreenGui {
     pub event_subsystem: EventSubsystem,
 }
 
+#[derive(new)]
+pub struct ScreenGuiTransformations {
+    src: Option<Rect>,
+    dst: Option<Rect>,
+    angle: f64,
+    center: Option<Point>,
+    flip_horizontal: bool,
+    flip_vertical: bool,
+}
+
+impl ScreenGuiTransformations {
+    pub fn with_flip_vertical(self, flip_vertical: bool) -> Self {
+        Self {
+            flip_vertical,
+            ..self
+        }
+    }
+}
+
+impl Default for ScreenGuiTransformations {
+    fn default() -> Self {
+        Self::new(None, None, 0., None, false, true)
+    }
+}
+
+impl ScreenGuiTransformations {
+    pub fn center(&self) -> Option<Point> {
+        self.center
+    }
+}
+
 #[derive(Serialize, Derivative, new)]
 #[derivative(Debug)]
 pub struct Screen {
@@ -83,13 +121,80 @@ impl Clone for Screen {
     }
 }
 
-pub trait DefaultSeed {
-    fn default(rng: &mut Pcg64) -> Self;
+pub trait Sample: SampleUniform {
+    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self;
 }
 
 impl Screen {
     pub fn is_open(&self) -> bool {
-        self.gui.is_none()
+        self.gui.is_some()
+    }
+
+    pub fn render(&mut self, mode: RenderMode) -> Renders {
+        match self.gui.as_mut() {
+            Some(ScreenGui {
+                canvas,
+                fps_manager,
+                ..
+            }) => {
+                fps_manager.delay();
+                canvas.present();
+                if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
+                    Renders::SingleRgbArray(canvas_to_pixels(canvas, self.width))
+                } else {
+                    Renders::None
+                }
+            }
+            _ => Renders::None,
+        }
+    }
+
+    pub fn draw_on_canvas(
+        &mut self,
+        using_fn: impl FnMut(&mut WindowCanvas) -> (),
+        with_transformations: ScreenGuiTransformations,
+    ) {
+        match self.gui.as_mut() {
+            Some(ScreenGui { canvas, .. }) => {
+                let texture_creator = canvas.texture_creator();
+                let mut texture = texture_creator
+                    .create_texture_target(PixelFormatEnum::RGB24, self.width, self.height)
+                    .expect("Create texture.");
+
+                canvas
+                    .with_texture_canvas(&mut texture, using_fn)
+                    .expect("Was unable to render.");
+
+                canvas
+                    .copy_ex(
+                        &mut texture,
+                        with_transformations.src,
+                        with_transformations.dst,
+                        with_transformations.angle,
+                        with_transformations.center,
+                        with_transformations.flip_horizontal,
+                        with_transformations.flip_vertical,
+                    )
+                    .expect("Transformations failed to be applied.");
+            }
+            _ => (),
+        }
+    }
+
+    pub fn consume_events(&mut self) {
+        match self.gui.as_mut() {
+            Some(ScreenGui { event_pump, .. }) => {
+                for event in event_pump.poll_iter() {
+                    match event {
+                        Event::Quit { .. } => {
+                            panic!("ANIMATION WAS FORCED TO EXIT!")
+                        }
+                        _ => (),
+                    }
+                }
+            }
+            _ => (),
+        }
     }
 
     pub fn load_gui(&mut self) {

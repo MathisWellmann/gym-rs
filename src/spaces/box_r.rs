@@ -1,8 +1,8 @@
 use derive_new::new;
 use serde::Serialize;
 
-#[derive(Debug, Serialize, new, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Serialize, new, Clone)]
 pub struct BoxR<T> {
-    pub lower_bound: T,
-    pub upper_bound: T,
+    pub low: T,
+    pub high: T,
 }
