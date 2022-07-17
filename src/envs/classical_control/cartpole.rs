@@ -239,7 +239,7 @@ const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[
 
 impl<'a> Default for Metadata<CartPoleEnv<'a>> {
     fn default() -> Self {
-        Metadata::new(CART_POLE_RENDER_MODES, 20)
+        Metadata::new(CART_POLE_RENDER_MODES, 50)
     }
 }
 
