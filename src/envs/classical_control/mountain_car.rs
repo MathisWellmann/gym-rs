@@ -91,10 +91,12 @@ pub struct MountainCarEnv<'a> {
 
     pub state: MountainCarObservation,
 
+    pub metadata: Metadata<Self>,
+
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     rand_random: Pcg64,
-    metadata: Metadata<Self>,
+    freeze: bool,
 }
 
 impl<'a> Clone for MountainCarEnv<'a> {
@@ -115,6 +117,7 @@ impl<'a> Clone for MountainCarEnv<'a> {
             state: self.state.clone(),
             rand_random: self.rand_random.clone(),
             metadata: self.metadata.clone(),
+            freeze: self.freeze.clone(),
         }
     }
 }
@@ -203,14 +206,6 @@ impl Sample for MountainCarObservation {
 impl From<MountainCarObservation> for Vec<f64> {
     fn from(o: MountainCarObservation) -> Self {
         vec![o.position.into_inner(), o.velocity.into_inner()]
-    }
-}
-
-impl MountainCarObservation {
-    /// TODO
-    pub fn update(&mut self, position: O64, velocity: O64) {
-        self.position = position;
-        self.velocity = velocity;
     }
 }
 
@@ -380,6 +375,8 @@ impl<'a> MountainCarEnv<'a> {
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
 
+        let freeze = false;
+
         Self {
             min_position,
             max_position,
@@ -402,6 +399,7 @@ impl<'a> MountainCarEnv<'a> {
             screen,
 
             metadata,
+            freeze,
         }
     }
 }
@@ -421,6 +419,16 @@ impl<'a> Env for MountainCarEnv<'a> {
             action
         );
 
+        if self.freeze {
+            return ActionReward {
+                observation: self.state,
+                reward: OrderedFloat(0.),
+                done: true,
+                truncated: false,
+                info: Some(()),
+            };
+        }
+
         let mut position = self.state.position;
         let mut velocity = self.state.velocity;
 
@@ -438,7 +446,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
         let reward: O64 = OrderedFloat(-1.0);
 
-        self.state.update(position, velocity);
+        self.state = MountainCarObservation { position, velocity };
         self.render(self.render_mode);
 
         ActionReward {
@@ -458,20 +466,7 @@ impl<'a> Env for MountainCarEnv<'a> {
         let screen = &mut self.screen;
         let metadata = &self.metadata;
 
-        if self.render_mode == RenderMode::None {
-            let render_fn = &mut |internal_mode| {
-                Self::render(
-                    internal_mode,
-                    max_position,
-                    min_position,
-                    goal_position,
-                    state,
-                    screen,
-                    metadata,
-                )
-            };
-            self.renderer.get_renders(render_fn)
-        } else {
+        let render_fn = &mut |mode| {
             Self::render(
                 mode,
                 max_position,
@@ -481,6 +476,12 @@ impl<'a> Env for MountainCarEnv<'a> {
                 screen,
                 metadata,
             )
+        };
+
+        if self.render_mode == RenderMode::None {
+            self.renderer.get_renders(render_fn)
+        } else {
+            render_fn(mode)
         }
     }
 

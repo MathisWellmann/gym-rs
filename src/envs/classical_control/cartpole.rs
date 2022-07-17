@@ -1,3 +1,9 @@
+use nalgebra as na;
+use ordered_float::Float;
+use sdl2::{
+    gfx::primitives::DrawRenderer,
+    pixels::{self, Color},
+};
 use std::{f64::consts::PI, ops::Neg};
 
 use derive_new::new;
@@ -12,14 +18,13 @@ use rand::{
 
 use ordered_float::impl_rand::UniformOrdered;
 use rand_pcg::Pcg64;
-use sdl2::{pixels::PixelFormatEnum, render::Texture};
 use serde::Serialize;
 
 use crate::{
-    core::Env,
-    spaces::{BoxR, Discrete},
+    core::{ActionReward, Env},
+    spaces::{BoxR, Discrete, Space},
     utils::{
-        custom::{Metadata, Sample, Screen, O64},
+        custom::{Metadata, Sample, Screen, ScreenGuiTransformations, O64},
         renderer::{RenderMode, Renderer, Renders},
         seeding::{self, rand_random},
     },
@@ -45,6 +50,7 @@ pub struct CartPoleEnv<'a> {
     pub metadata: Metadata<Self>,
     #[serde(skip_serializing)]
     rand_random: Pcg64,
+    freeze: bool,
 }
 
 impl<'a> CartPoleEnv<'a> {
@@ -79,6 +85,8 @@ impl<'a> CartPoleEnv<'a> {
 
         let state = CartPoleObservation::sample_between(&mut rand_random, None);
 
+        let freeze = false;
+
         Self {
             gravity,
             masscart,
@@ -97,6 +105,7 @@ impl<'a> CartPoleEnv<'a> {
             state,
             metadata,
             rand_random,
+            freeze,
         }
     }
 
@@ -111,30 +120,109 @@ impl<'a> CartPoleEnv<'a> {
     pub fn render(
         mode: RenderMode,
         screen: &mut Screen,
-        metadata: Metadata<Self>,
+        metadata: &Metadata<Self>,
         x_threshold: O64,
         length: O64,
+        state: CartPoleObservation,
     ) -> Renders {
         assert!(metadata.render_modes.contains(&mode));
 
         screen.load_gui();
         screen.consume_events();
 
-        let gui_manager = screen.gui.as_mut().expect("GUI not found.");
-        let canvas = &mut gui_manager.canvas;
-        let texture_creator = canvas.texture_creator();
-        let mut texture = texture_creator
-            .create_texture_target(PixelFormatEnum::RGB24, screen.width, screen.height)
-            .expect("Texture was unable to be created");
-
         let world_width = x_threshold * 2.;
         let scale = OrderedFloat(screen.width as f64) / world_width;
-        let polewidth = OrderedFloat(10.);
+        let polewidth: O64 = OrderedFloat(10.);
         let polelen = scale * 2. * length;
         let cartwidth = OrderedFloat(50.);
         let cartheight = OrderedFloat(30.);
 
-        todo!()
+        let screen_width = screen.width;
+
+        screen.draw_on_canvas(
+            |canvas| {
+                canvas.set_draw_color(pixels::Color::WHITE);
+                canvas.clear();
+
+                let (mut l, mut r, mut t, mut b) = (
+                    -cartwidth / OrderedFloat(2f64),
+                    cartwidth / OrderedFloat(2f64),
+                    cartheight / OrderedFloat(2f64),
+                    -cartheight / OrderedFloat(2f64),
+                );
+
+                let axleoffset = cartheight / OrderedFloat(4.0);
+                let cartx = state.x * scale + OrderedFloat(screen_width as f64) / OrderedFloat(2.0);
+                let carty = OrderedFloat(100.);
+                let cart_coords = [(l, b), (l, t), (r, t), (r, b)]
+                    .map(|(x, y)| (x + cartx, y + carty))
+                    .map(|(x, y)| (x.floor().into_inner() as i16, y.floor().into_inner() as i16));
+
+                let cart_coords_x = &cart_coords.map(|coord| coord.0);
+                let cart_coords_y = &cart_coords.map(|coord| coord.1);
+
+                canvas
+                    .aa_polygon(cart_coords_x, cart_coords_y, pixels::Color::BLACK)
+                    .unwrap();
+
+                canvas
+                    .filled_polygon(cart_coords_x, cart_coords_y, pixels::Color::BLACK)
+                    .unwrap();
+
+                (l, r, t, b) = (
+                    -polewidth / OrderedFloat(2f64),
+                    polewidth / OrderedFloat(2f64),
+                    polelen - polewidth / OrderedFloat(2f64),
+                    -polewidth / OrderedFloat(2f64),
+                );
+
+                let pole_coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
+                    let rotation_matrix = na::Rotation2::new(state.theta.into_inner());
+                    let point = na::Point2::new(x.into_inner(), y.into_inner());
+                    let rotated_point = rotation_matrix * point;
+                    (rotated_point.x, rotated_point.y)
+                });
+
+                let pole_coords_x = &pole_coords.map(|coord| coord.0 as i16);
+                let pole_coords_y = &pole_coords.map(|coord| coord.1 as i16);
+
+                canvas
+                    .aa_polygon(pole_coords_x, pole_coords_y, Color::RGB(202, 152, 101))
+                    .unwrap();
+                canvas
+                    .filled_polygon(pole_coords_x, pole_coords_y, Color::RGB(202, 152, 101))
+                    .unwrap();
+
+                canvas
+                    .aa_circle(
+                        cartx.floor().into_inner() as i16,
+                        (carty + axleoffset).floor().into_inner() as i16,
+                        (polewidth / OrderedFloat(2f64)).floor().into_inner() as i16,
+                        Color::RGB(129, 132, 203),
+                    )
+                    .unwrap();
+                canvas
+                    .filled_circle(
+                        cartx.floor().into_inner() as i16,
+                        (carty + axleoffset).floor().into_inner() as i16,
+                        (polewidth / OrderedFloat(2f64)).floor().into_inner() as i16,
+                        Color::RGB(129, 132, 203),
+                    )
+                    .unwrap();
+
+                canvas
+                    .hline(
+                        0,
+                        screen_width as i16,
+                        carty.floor().into_inner() as i16,
+                        Color::BLACK,
+                    )
+                    .unwrap();
+            },
+            ScreenGuiTransformations::default(),
+        );
+
+        screen.render(mode)
     }
 }
 
@@ -256,7 +344,7 @@ impl Neg for CartPoleObservation {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Eq, PartialEq)]
 pub enum KinematicsIntegrator {
     Euler,
     Other,
@@ -279,7 +367,95 @@ impl<'a> Env for CartPoleEnv<'a> {
         &mut self,
         action: Self::Action,
     ) -> crate::core::ActionReward<Self::Observation, Self::Info> {
-        todo!()
+        assert!(
+            self.action_space.contains(action),
+            "{} usize invalid",
+            action
+        );
+
+        if self.freeze {
+            return ActionReward {
+                observation: self.state,
+                reward: OrderedFloat(0.),
+                done: true,
+                truncated: false,
+                info: Some(()),
+            };
+        }
+
+        let CartPoleObservation {
+            mut x,
+            mut x_dot,
+            mut theta,
+            mut theta_dot,
+        } = self.state;
+        let force = if action == 1 {
+            self.force_mag
+        } else {
+            -self.force_mag
+        };
+
+        let costheta = theta.cos();
+        let sintheta = theta.sin();
+
+        let temp = (force + self.polemass_length() * theta_dot.powf(OrderedFloat(2.)) * sintheta)
+            / self.total_mass();
+        let thetaacc = (self.gravity * sintheta - costheta * temp)
+            / (self.length
+                * (OrderedFloat(4.0 / 3.0)
+                    - self.masspole * costheta.powf(OrderedFloat(2.)) / self.total_mass()));
+        let xacc = temp - self.polemass_length() * thetaacc * costheta / self.total_mass();
+
+        if self.kinematics_integrator == KinematicsIntegrator::Euler {
+            x = x + self.tau * x_dot;
+            x_dot = x_dot + self.tau * xacc;
+            theta = theta + self.tau * theta_dot;
+            theta_dot = theta_dot + self.tau * thetaacc;
+        } else {
+            x_dot = x_dot + self.tau * xacc;
+            x = x + self.tau * x_dot;
+            theta_dot = theta_dot + self.tau * thetaacc;
+            theta = theta + self.tau * theta_dot;
+        }
+
+        self.state = CartPoleObservation {
+            x,
+            x_dot,
+            theta_dot,
+            theta,
+        };
+
+        let done = x < -self.x_threshold
+            || x > self.x_threshold
+            || theta < -self.theta_threshold_radians
+            || theta > self.theta_threshold_radians;
+
+        let reward = if !done {
+            OrderedFloat(1.0)
+        } else if !self.freeze {
+            self.freeze = true;
+            OrderedFloat(1.0)
+        } else {
+            panic!("Rewards should never be produced after termination.")
+        };
+
+        let screen = &mut self.screen;
+        let metadata = &self.metadata;
+        let x_threshold = self.x_threshold;
+        let length = self.length;
+        let state = self.state;
+
+        self.renderer.render_step(&mut |mode| {
+            Self::render(mode, screen, metadata, x_threshold, length, state)
+        });
+
+        ActionReward {
+            observation: self.state,
+            reward,
+            done,
+            truncated: false,
+            info: Some(()),
+        }
     }
 
     fn reset(
@@ -295,11 +471,40 @@ impl<'a> Env for CartPoleEnv<'a> {
 
         self.renderer.reset();
 
-        todo!()
+        let screen = &mut self.screen;
+        let metadata = &self.metadata;
+        let x_threshold = self.x_threshold;
+        let length = self.length;
+        let state = self.state;
+
+        self.freeze = false;
+
+        self.renderer.reset();
+        self.renderer.render_step(&mut |mode| {
+            Self::render(mode, screen, metadata, x_threshold, length, state)
+        });
+
+        if return_info {
+            (self.state, Some(()))
+        } else {
+            (self.state, None)
+        }
     }
 
     fn render(&mut self, mode: RenderMode) -> crate::utils::renderer::Renders {
-        todo!()
+        let screen = &mut self.screen;
+        let metadata = &self.metadata;
+        let x_threshold = self.x_threshold;
+        let length = self.length;
+        let state = self.state;
+
+        let render_fn =
+            &mut |mode| Self::render(mode, screen, metadata, x_threshold, length, state);
+        if self.render_mode != RenderMode::None {
+            self.renderer.get_renders(render_fn)
+        } else {
+            render_fn(mode)
+        }
     }
 
     fn close(&mut self) {
@@ -320,5 +525,16 @@ impl<'a> Env for CartPoleEnv<'a> {
 
     fn observation_space(&self) -> &Self::ObservationSpace {
         &self.observation_space
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CartPoleEnv;
+
+    #[test]
+    fn test_run() {
+        let env = CartPoleEnv::new(RenderMode::Human);
+
     }
 }
