@@ -530,11 +530,19 @@ impl<'a> Env for CartPoleEnv<'a> {
 
 #[cfg(test)]
 mod tests {
+    use rand::{thread_rng, Rng};
+
     use super::CartPoleEnv;
+    use super::*;
 
     #[test]
     fn test_run() {
-        let env = CartPoleEnv::new(RenderMode::Human);
+        let mut env = CartPoleEnv::new(RenderMode::Human);
+        env.reset(None, false, None);
 
+        for _ in 0..10000 {
+            let action = (&mut thread_rng()).gen_range(0..=1);
+            env.step(action);
+        }
     }
 }
