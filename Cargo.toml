@@ -1,6 +1,6 @@
 [package]
 name = "gym-rs"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["MathisWellmann <wellmannmathis@gmail.com>"]
 edition = "2018"
 license-file = "LICENSE"
