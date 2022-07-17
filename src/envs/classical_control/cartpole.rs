@@ -1,5 +1,5 @@
 use nalgebra as na;
-use ordered_float::Float;
+use ordered_float::{impl_rand::UniformOrdered, Float};
 use sdl2::{
     gfx::primitives::DrawRenderer,
     pixels::{self, Color},
@@ -16,7 +16,7 @@ use rand::{
     prelude::Distribution,
 };
 
-use ordered_float::impl_rand::UniformOrdered;
+// use ordered_float::impl_rand::UniformOrdered;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
