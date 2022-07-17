@@ -21,26 +21,18 @@ To use this crate in your project, put this in your Cargo.toml:
 gym_rs = "1.0.0"
 ```
 
-### Contributing
+### Contributions
 
-All contributions are welcomed!
+Contributions are welcomed. For the contribution guidelines, please take a look at [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-For more information, checkout [CONTRIBUTING.md](./CONTRIBUTING.md)
+### Donations
 
-### Donations :moneybag: :money_with_wings:
+If you would like to support the development of this crate, feel free to send over a donation:
 
-I you would like to support the development of this crate, feel free to send over a donation:
-
-Monero (XMR) address:
+Monero:
 
 ```plain
 47xMvxNKsCKMt2owkDuN1Bci2KMiqGrAFCQFSLijWLs49ua67222Wu3LZryyopDVPYgYmAnYkSZSz9ZW2buaDwdyKTWGwwb
 ```
 
-![monero](img/monero_donations_qrcode.png)
-
-### License
-
-gym-rs is licensed under MIT License just like OpenAI's Gym.
-
-See [LICENSE.md](https://github.com/MathisWellmann/gym-rs/blob/master/LICENSE.md) for further details.
+![monero](assets/monero_donations_qrcode.png)
