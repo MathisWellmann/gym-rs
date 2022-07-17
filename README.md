@@ -1,6 +1,6 @@
 # OpenAI Gym written in pure Rust for blazingly fast performance :rocket:
 
-This library aims be be as close to the original OpenAI Gym library which is written in Python
+This library aims be be as close to the original OpenAI Gym library written in Python
 and translate it into Rust for blazingly fast performance.
 This will make the use of Python unnecessary which is awesome.
 
@@ -21,23 +21,11 @@ To use this crate in your project, put this in your Cargo.toml:
 gym_rs = "1.0.0"
 ```
 
-### TODOs:
-
-- [ ] Implement more environments.
-- [ ] Compare performance to gym-rs python wrapper.
-- [ ] Make generic implementation and compare f32 vs f64 performance.
-- [ ] Publish on crates.io.
-- [ ] Introduce gif render style, so that black themed output is possible.
-
 ### Contributing
 
-All contributions are welcomed.
+All contributions are welcomed!
 
-If you would like to add an environment or a feature, please fork this repository and create a pull request
-with your changes. Adding new environments should be as easy as translating from Python to Rust. See
-[OpenAI/gym](https://github.com/openai/gym)
-for environments that are not yet implemented here! There is a lot of easy work to be done here.
-Any help is highly appreciated and benefits the Rust and ML/AI community greatly!
+For more information, checkout [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ### Donations :moneybag: :money_with_wings:
 
