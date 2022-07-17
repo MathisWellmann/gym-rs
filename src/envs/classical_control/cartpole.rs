@@ -1,3 +1,4 @@
+use log::warn;
 use nalgebra as na;
 use ordered_float::{impl_rand::UniformOrdered, Float};
 use sdl2::{
@@ -16,7 +17,6 @@ use rand::{
     prelude::Distribution,
 };
 
-// use ordered_float::impl_rand::UniformOrdered;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
@@ -50,7 +50,7 @@ pub struct CartPoleEnv<'a> {
     pub metadata: Metadata<Self>,
     #[serde(skip_serializing)]
     rand_random: Pcg64,
-    freeze: bool,
+    pub steps_beyond_terminated: Option<usize>,
 }
 
 impl<'a> CartPoleEnv<'a> {
@@ -85,7 +85,7 @@ impl<'a> CartPoleEnv<'a> {
 
         let state = CartPoleObservation::sample_between(&mut rand_random, None);
 
-        let freeze = false;
+        let steps_beyond_terminated = None;
 
         Self {
             gravity,
@@ -105,7 +105,7 @@ impl<'a> CartPoleEnv<'a> {
             state,
             metadata,
             rand_random,
-            freeze,
+            steps_beyond_terminated,
         }
     }
 
@@ -376,15 +376,7 @@ impl<'a> Env for CartPoleEnv<'a> {
             action
         );
 
-        if self.freeze {
-            return ActionReward {
-                observation: self.state,
-                reward: OrderedFloat(0.),
-                done: true,
-                truncated: false,
-                info: Some(()),
-            };
-        }
+        if self.steps_beyond_terminated.is_some() {}
 
         let CartPoleObservation {
             mut x,
@@ -435,11 +427,13 @@ impl<'a> Env for CartPoleEnv<'a> {
 
         let reward = if !done {
             OrderedFloat(1.0)
-        } else if !self.freeze {
-            self.freeze = true;
+        } else if self.steps_beyond_terminated.is_some() {
+            self.steps_beyond_terminated = Some(0);
             OrderedFloat(1.0)
         } else {
-            panic!("Rewards should never be produced after termination.")
+            warn!("Calling step after termination may result in undefined behaviour. Consider reseting.");
+            self.steps_beyond_terminated = self.steps_beyond_terminated.map(|step| step + 1);
+            OrderedFloat(0.)
         };
 
         let screen = &mut self.screen;
@@ -480,7 +474,7 @@ impl<'a> Env for CartPoleEnv<'a> {
         let length = self.length;
         let state = self.state;
 
-        self.freeze = false;
+        self.steps_beyond_terminated = None;
 
         self.renderer.reset();
         self.renderer.render_step(&mut |mode| {
@@ -543,7 +537,7 @@ mod tests {
         let mut env = CartPoleEnv::new(RenderMode::Human);
         env.reset(None, false, None);
 
-        for _ in 0..10000 {
+        for _ in 0..200 {
             let action = (&mut thread_rng()).gen_range(0..=1);
             env.step(action);
         }
