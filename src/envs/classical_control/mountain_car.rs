@@ -370,7 +370,7 @@ impl<'a> MountainCarEnv<'a> {
         let state = MountainCarObservation::sample_between(&mut rng, None);
 
         let metadata = Metadata::default();
-        let screen = Screen::new(400, 600, "MountainCar", metadata.render_fps, render_mode);
+        let screen = Screen::new(400, 600, "Mountain Car", metadata.render_fps, render_mode);
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);

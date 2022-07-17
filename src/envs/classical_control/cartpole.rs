@@ -81,7 +81,7 @@ impl<'a> CartPoleEnv<'a> {
         let renderer = Renderer::new(render_mode, None, None);
 
         let metadata = Metadata::default();
-        let screen = Screen::new(600, 400, "Cart Pole", metadata.render_fps, render_mode);
+        let screen = Screen::new(400, 600, "Cart Pole", metadata.render_fps, render_mode);
 
         let state = CartPoleObservation::sample_between(&mut rand_random, None);
 
@@ -177,10 +177,13 @@ impl<'a> CartPoleEnv<'a> {
                 );
 
                 let pole_coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
-                    let rotation_matrix = na::Rotation2::new(state.theta.into_inner());
+                    let rotation_matrix = na::Rotation2::new(-state.theta.into_inner());
                     let point = na::Point2::new(x.into_inner(), y.into_inner());
                     let rotated_point = rotation_matrix * point;
-                    (rotated_point.x, rotated_point.y)
+                    (
+                        rotated_point.x + cartx.into_inner(),
+                        rotated_point.y + (carty + axleoffset).into_inner(),
+                    )
                 });
 
                 let pole_coords_x = &pole_coords.map(|coord| coord.0 as i16);
