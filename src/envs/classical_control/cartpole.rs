@@ -527,6 +527,7 @@ impl<'a> Env for CartPoleEnv<'a> {
 
 #[cfg(test)]
 mod tests {
+    use log::debug;
     use rand::{thread_rng, Rng};
 
     use super::CartPoleEnv;
@@ -534,12 +535,30 @@ mod tests {
 
     #[test]
     fn test_run() {
+        pretty_env_logger::init();
+
         let mut env = CartPoleEnv::new(RenderMode::Human);
         env.reset(None, false, None);
 
-        for _ in 0..200 {
-            let action = (&mut thread_rng()).gen_range(0..=1);
-            env.step(action);
+        let mut rewards = vec![];
+
+        for _ in 0..1000 {
+            let mut current_reward = OrderedFloat(0.);
+
+            for _ in 0..500 {
+                let action = (&mut thread_rng()).gen_range(0..=1);
+                let state_reward = env.step(action);
+                current_reward += state_reward.reward;
+
+                if state_reward.done {
+                    break;
+                }
+            }
+
+            env.reset(None, false, None);
+            rewards.push(current_reward);
         }
+
+        debug!("{:?}", rewards)
     }
 }
