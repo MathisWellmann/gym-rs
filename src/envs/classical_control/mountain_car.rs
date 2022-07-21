@@ -71,7 +71,7 @@ use serde::Serialize;
 ///  Episode length is greater than 200
 #[derive(Serialize, Derivative)]
 #[derivative(Debug)]
-pub struct MountainCarEnv<'a> {
+pub struct MountainCarEnv {
     pub min_position: O64,
     pub max_position: O64,
     pub max_speed: O64,
@@ -82,7 +82,7 @@ pub struct MountainCarEnv<'a> {
     pub gravity: O64,
 
     pub render_mode: RenderMode,
-    pub renderer: Renderer<'a>,
+    pub renderer: Renderer,
 
     pub screen: Screen,
 
@@ -99,7 +99,7 @@ pub struct MountainCarEnv<'a> {
     freeze: bool,
 }
 
-impl<'a> Clone for MountainCarEnv<'a> {
+impl Clone for MountainCarEnv {
     fn clone(&self) -> Self {
         Self {
             min_position: self.min_position.clone(),
@@ -129,7 +129,7 @@ const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::None,
 ];
 
-impl<'a> Default for Metadata<MountainCarEnv<'a>> {
+impl Default for Metadata<MountainCarEnv> {
     fn default() -> Self {
         Metadata::new(MOUNTAIN_CAR_RENDER_MODES, 30)
     }
@@ -209,7 +209,7 @@ impl From<MountainCarObservation> for Vec<f64> {
     }
 }
 
-impl<'a> MountainCarEnv<'a> {
+impl MountainCarEnv {
     fn height(xs: &Vec<O64>) -> Vec<O64> {
         xs.clone()
             .iter()
@@ -404,7 +404,7 @@ impl<'a> MountainCarEnv<'a> {
     }
 }
 
-impl<'a> Env for MountainCarEnv<'a> {
+impl Env for MountainCarEnv {
     type Action = usize;
     type Observation = MountainCarObservation;
     type Info = ();

@@ -31,7 +31,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize)]
-pub struct CartPoleEnv<'a> {
+pub struct CartPoleEnv {
     pub gravity: O64,
     pub masscart: O64,
     pub masspole: O64,
@@ -44,7 +44,7 @@ pub struct CartPoleEnv<'a> {
     pub action_space: Discrete,
     pub observation_space: BoxR<CartPoleObservation>,
     pub render_mode: RenderMode,
-    pub renderer: Renderer<'a>,
+    pub renderer: Renderer,
     pub screen: Screen,
     pub state: CartPoleObservation,
     pub metadata: Metadata<Self>,
@@ -53,7 +53,7 @@ pub struct CartPoleEnv<'a> {
     pub steps_beyond_terminated: Option<usize>,
 }
 
-impl<'a> CartPoleEnv<'a> {
+impl CartPoleEnv {
     pub fn new(render_mode: RenderMode) -> Self {
         let (mut rand_random, _) = rand_random(None);
 
@@ -237,7 +237,7 @@ const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[
     RenderMode::SingleDepthArray,
 ];
 
-impl<'a> Default for Metadata<CartPoleEnv<'a>> {
+impl Default for Metadata<CartPoleEnv> {
     fn default() -> Self {
         Metadata::new(CART_POLE_RENDER_MODES, 50)
     }
@@ -353,7 +353,7 @@ pub enum KinematicsIntegrator {
     Other,
 }
 
-impl<'a> Env for CartPoleEnv<'a> {
+impl Env for CartPoleEnv {
     type Action = usize;
 
     type Observation = CartPoleObservation;

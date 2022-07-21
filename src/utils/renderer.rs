@@ -2,10 +2,10 @@ use derive_new::new;
 use serde::Serialize;
 
 /// TODO
-#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Renderer<'a> {
-    no_returns_render: &'a [RenderMode],
-    single_render: &'a [RenderMode],
+#[derive(Debug, Serialize, Clone)]
+pub struct Renderer {
+    no_returns_render: Vec<RenderMode>,
+    single_render: Vec<RenderMode>,
     mode: RenderMode,
     // NOTE: `render` cannot exist as a property, as it likely requires access to the enviroment using this renderer.
     // Since RenderMode would need to be a closure, the environment would need to be static which is impossible without
@@ -18,28 +18,16 @@ pub struct Renderer<'a> {
 
 type RenderFn<'a> = &'a mut dyn FnMut(RenderMode) -> Renders;
 
-impl<'a> Clone for Renderer<'a> {
-    fn clone(&self) -> Self {
-        let render_list = self.render_list.clone();
-        Self {
-            no_returns_render: &self.no_returns_render,
-            single_render: &self.single_render,
-            mode: self.mode.clone(),
-            render_list,
-        }
-    }
-}
-
-impl<'a> Renderer<'a> {
+impl Renderer {
     /// TODO
     pub fn new(
         mode: RenderMode,
-        no_returns_render: Option<&'a [RenderMode]>,
-        single_render: Option<&'a [RenderMode]>,
+        no_returns_render: Option<Vec<RenderMode>>,
+        single_render: Option<Vec<RenderMode>>,
     ) -> Self {
         Self {
-            no_returns_render: no_returns_render.unwrap_or(RenderMode::NO_RETURNS_RENDER),
-            single_render: single_render.unwrap_or(RenderMode::SINGLE_RENDER),
+            no_returns_render: no_returns_render.unwrap_or(RenderMode::NO_RETURNS_RENDER.to_vec()),
+            single_render: single_render.unwrap_or(RenderMode::SINGLE_RENDER.to_vec()),
             mode,
             render_list: Vec::new(),
         }
