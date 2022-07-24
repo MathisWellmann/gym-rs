@@ -537,7 +537,7 @@ mod tests {
 
     #[test]
     fn test_run() {
-        pretty_env_logger::init();
+        pretty_env_logger::try_init().unwrap_or(());
         let mut mc = MountainCarEnv::new(RenderMode::Human, None);
         let _state = mc.reset(None, false, None);
 

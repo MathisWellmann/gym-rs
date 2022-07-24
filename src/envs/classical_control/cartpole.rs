@@ -535,17 +535,17 @@ mod tests {
 
     #[test]
     fn test_run() {
-        pretty_env_logger::init();
+        pretty_env_logger::try_init().unwrap_or(());
 
         let mut env = CartPoleEnv::new(RenderMode::Human);
         env.reset(None, false, None);
 
         let mut rewards = vec![];
 
-        for _ in 0..1000 {
+        for _ in 0..15 {
             let mut current_reward = OrderedFloat(0.);
 
-            for _ in 0..500 {
+            for _ in 0..475 {
                 let action = (&mut thread_rng()).gen_range(0..=1);
                 let state_reward = env.step(action);
                 current_reward += state_reward.reward;

@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::{
     spaces::BoxR,
     utils::{
-        custom::{Metadata, O64},
+        custom::{Metadata, Sample, O64},
         renderer::{RenderMode, Renders},
     },
 };
@@ -16,6 +16,7 @@ use crate::{
 pub trait Env: Clone + Debug + Serialize
 where
     Vec<f64>: From<Self::Observation>,
+    Self::Observation: Sample,
 {
     type Action;
     type Observation;
