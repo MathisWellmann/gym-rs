@@ -96,7 +96,6 @@ pub struct MountainCarEnv {
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     rand_random: Pcg64,
-    freeze: bool,
 }
 
 impl Clone for MountainCarEnv {
@@ -117,7 +116,6 @@ impl Clone for MountainCarEnv {
             state: self.state.clone(),
             rand_random: self.rand_random.clone(),
             metadata: self.metadata.clone(),
-            freeze: self.freeze.clone(),
         }
     }
 }
@@ -375,8 +373,6 @@ impl MountainCarEnv {
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
 
-        let freeze = false;
-
         Self {
             min_position,
             max_position,
@@ -399,7 +395,6 @@ impl MountainCarEnv {
             screen,
 
             metadata,
-            freeze,
         }
     }
 }
@@ -418,16 +413,6 @@ impl Env for MountainCarEnv {
             "{} (usize) invalid",
             action
         );
-
-        if self.freeze {
-            return ActionReward {
-                observation: self.state,
-                reward: OrderedFloat(0.),
-                done: true,
-                truncated: false,
-                info: Some(()),
-            };
-        }
 
         let mut position = self.state.position;
         let mut velocity = self.state.velocity;
