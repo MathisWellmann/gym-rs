@@ -427,7 +427,7 @@ impl Env for CartPoleEnv {
 
         let reward = if !done {
             OrderedFloat(1.0)
-        } else if self.steps_beyond_terminated.is_some() {
+        } else if self.steps_beyond_terminated.is_none() {
             self.steps_beyond_terminated = Some(0);
             OrderedFloat(1.0)
         } else {
