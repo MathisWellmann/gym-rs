@@ -15,8 +15,7 @@ use crate::{
 /// TODO
 pub trait Env: Clone + Debug + Serialize
 where
-    Vec<f64>: From<Self::Observation>,
-    Self::Observation: Sample,
+    Self::Observation: Sample + Into<Vec<f64>>,
 {
     type Action;
     type Observation;
