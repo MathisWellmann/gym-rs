@@ -3,6 +3,7 @@ use ordered_float::impl_rand::UniformOrdered;
 use rand::distributions::uniform::{SampleUniform, UniformSampler};
 use rand::distributions::Uniform;
 use rand::prelude::Distribution;
+use rand::Rng;
 use sdl2::gfx::primitives::DrawRenderer;
 use std::fmt::Debug;
 use std::iter::zip;
@@ -183,7 +184,7 @@ impl SampleUniform for MountainCarObservation {
 }
 
 impl Sample for MountainCarObservation {
-    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self {
+    fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self {
         let BoxR { low, high } = bounds.unwrap_or({
             BoxR::new(
                 MountainCarObservation {

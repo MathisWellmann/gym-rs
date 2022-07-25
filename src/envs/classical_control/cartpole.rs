@@ -15,6 +15,7 @@ use rand::{
         Uniform,
     },
     prelude::Distribution,
+    Rng,
 };
 
 use rand_pcg::Pcg64;
@@ -319,7 +320,7 @@ impl From<CartPoleObservation> for Vec<f64> {
 }
 
 impl Sample for CartPoleObservation {
-    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self {
+    fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self {
         let BoxR { low, high } = bounds.unwrap_or({
             let observation_bound = CartPoleObservation::new(
                 OrderedFloat(0.5),

@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use derivative::Derivative;
 use derive_new::new;
 use ordered_float::OrderedFloat;
-use rand::distributions::uniform::SampleUniform;
-use rand_pcg::Pcg64;
+use rand::{distributions::uniform::SampleUniform, Rng};
 use sdl2::{
     event::Event,
     gfx::framerate::FPSManager,
@@ -116,7 +115,7 @@ impl Clone for Screen {
 }
 
 pub trait Sample: SampleUniform {
-    fn sample_between(rng: &mut Pcg64, bounds: Option<BoxR<Self>>) -> Self;
+    fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self;
 }
 
 impl Screen {
