@@ -12,7 +12,6 @@ use crate::{
     },
 };
 
-/// TODO
 pub trait Env: Clone + Debug + Serialize
 where
     Self::Observation: Sample + Into<Vec<f64>>,
@@ -24,10 +23,8 @@ where
     type ObservationSpace;
     type ResetInfo;
 
-    /// TODO
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
-    /// TODO
     fn reset(
         &mut self,
         seed: Option<u64>,
@@ -35,7 +32,6 @@ where
         options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>);
 
-    /// TODO
     fn render(&mut self, mode: RenderMode) -> Renders;
 
     fn close(&mut self);
@@ -60,18 +56,12 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 
 const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
 
-/// TODO
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ActionReward<T, E> {
-    // TODO
     pub observation: T,
-    // TODO
     pub reward: O64,
-    // TODO
     pub done: bool,
-    // TODO
     pub truncated: bool,
-    // TODO
     pub info: Option<E>,
 }
 

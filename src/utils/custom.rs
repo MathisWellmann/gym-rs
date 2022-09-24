@@ -20,7 +20,6 @@ use super::renderer::{RenderColor, RenderFrame, RenderMode, Renders};
 
 pub type O64 = OrderedFloat<f64>;
 
-/// TODO: Write documentation
 pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) -> T {
     if left_bound <= value && value <= right_bound {
         value
@@ -180,7 +179,7 @@ impl Screen {
                 for event in event_pump.poll_iter() {
                     match event {
                         Event::Quit { .. } => {
-                            panic!("ANIMATION WAS FORCED TO EXIT!")
+                            panic!("Animation was forced to exit.")
                         }
                         _ => (),
                     }
