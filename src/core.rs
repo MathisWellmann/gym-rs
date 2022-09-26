@@ -12,6 +12,7 @@ use crate::{
     },
 };
 
+/// Defines a common set of operations available to different environments.
 pub trait Env: Clone + Debug + Serialize
 where
     Self::Observation: Sample + Into<Vec<f64>>,
