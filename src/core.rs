@@ -17,13 +17,24 @@ pub trait Env: Clone + Debug + Serialize
 where
     Self::Observation: Sample + Into<Vec<f64>>,
 {
+    /// The type of action supported.
     type Action;
+    /// The type of the observation produced after an action has been applied.
     type Observation;
+    /// The type of the metadata object produced by acting on the environment.
     type Info;
+    /// The type of values that can be observed in the action space.
     type ActionSpace;
+    /// The type of observations produced
     type ObservationSpace;
+    /// The type of the object produced when an environment is reset.
     type ResetInfo;
 
+    /// Acts on an environment using the given action, producing the rewarded and additional
+    /// context. 
+    ///
+    /// Examples:
+    ///     
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
     fn reset(
