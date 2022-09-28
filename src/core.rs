@@ -89,18 +89,28 @@ where
     fn observation_space(&self) -> &Self::ObservationSpace;
 }
 
+/// Encapsulates and describes the state update experienced by an environment after acting on an
+/// action.
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ActionReward<T, E> {
+    /// The current observable state. 
     pub observation: T,
+    /// The value of the reward produced.
     pub reward: O64,
+    /// Indicates whether the episode has terminated or not.
     pub done: bool,
+    /// Indicates whether the episode has termianted early or  not.
     pub truncated: bool,
+    /// Additional info implementations may provide for purposes beyond classical RL.
     pub info: Option<E>,
 }
 
+/// Defines the bounds for the reward value that can be observed.
 #[derive(Clone, Debug, Serialize, PartialEq, Ord, PartialOrd, Eq)]
 pub struct RewardRange {
+    /// The smallest possible reward that can be observed.
     lower_bound: O64,
+    /// The largest possible reward that can be observed.
     upper_bound: O64,
 }
 
