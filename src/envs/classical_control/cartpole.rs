@@ -22,7 +22,7 @@ use rand_pcg::Pcg64;
 use serde::Serialize;
 
 use crate::{
-    core::{ActionReward, Env},
+    core::{ActionReward, Env, EnvProperties},
     spaces::{BoxR, Discrete, Space},
     utils::{
         custom::{Metadata, Sample, Screen, ScreenGuiTransformations, O64},
@@ -361,10 +361,6 @@ impl Env for CartPoleEnv {
 
     type Info = ();
 
-    type ActionSpace = Discrete;
-
-    type ObservationSpace = BoxR<CartPoleObservation>;
-
     type ResetInfo = ();
 
     fn step(
@@ -508,6 +504,12 @@ impl Env for CartPoleEnv {
     fn close(&mut self) {
         self.screen.gui.take();
     }
+}
+
+impl EnvProperties for CartPoleEnv {
+    type ActionSpace = Discrete;
+
+    type ObservationSpace = BoxR<CartPoleObservation>;
 
     fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
