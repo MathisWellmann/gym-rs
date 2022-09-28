@@ -8,7 +8,7 @@ use sdl2::gfx::primitives::DrawRenderer;
 use std::fmt::Debug;
 use std::iter::zip;
 
-use crate::core::{ActionReward, Env};
+use crate::core::{ActionReward, Env, EnvProperties};
 use crate::spaces::{self, BoxR, Discrete, Space};
 use crate::utils::custom::{self, Metadata, Sample, Screen, ScreenGuiTransformations, O64};
 use crate::utils::renderer::{RenderMode, Renderer, Renders};
@@ -23,11 +23,9 @@ use sdl2::pixels::Color;
 use sdl2::rect::Point;
 use serde::Serialize;
 
-/// # Description:
-///
-///  The agent (a car) is started at the bottom of a valley. For any given
-///  state, the agent may choose to accelerate to the left, right or cease
-///  any acceleration.
+/// The agent (a car) is started at the bottom of a valley. For any given
+/// state, the agent may choose to accelerate to the left, right or cease
+/// any acceleration.
 ///
 /// # Source:
 ///
@@ -404,11 +402,12 @@ impl Env for MountainCarEnv {
     type Action = usize;
     type Observation = MountainCarObservation;
     type Info = ();
-    type ActionSpace = Discrete;
-    type ObservationSpace = spaces::BoxR<Self::Observation>;
     type ResetInfo = ();
 
-    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info> {
+    fn step(
+        &mut self,
+        action: Self::Action,
+    ) -> ActionReward<<Self as Env>::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),
             "{} (usize) invalid",
@@ -510,6 +509,18 @@ impl Env for MountainCarEnv {
         }
     }
 
+    fn close(&mut self) {
+        self.screen.gui.take();
+    }
+}
+
+impl EnvProperties for MountainCarEnv
+where
+    Self: Sized,
+{
+    type ActionSpace = Discrete;
+    type ObservationSpace = spaces::BoxR<<Self as Env>::Observation>;
+
     fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
     }
@@ -524,10 +535,6 @@ impl Env for MountainCarEnv {
 
     fn observation_space(&self) -> &Self::ObservationSpace {
         &self.observation_space
-    }
-
-    fn close(&mut self) {
-        self.screen.gui.take();
     }
 }
 
