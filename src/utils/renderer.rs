@@ -1,25 +1,28 @@
 use derive_new::new;
 use serde::Serialize;
 
-/// TODO
+/// A structure which lazily invokes renders and stores the resulting frames.
 #[derive(Debug, Serialize, Clone)]
 pub struct Renderer {
+    /// A list of render modes which should not produce any frames.
     no_returns_render: Vec<RenderMode>,
+    /// A list of render modes which produce exactly one frame when it's associated render closure
+    /// is called.
     single_render: Vec<RenderMode>,
+    /// The render mode associated with the environment holding this render-responsible object.
     mode: RenderMode,
-    // NOTE: `render` cannot exist as a property, as it likely requires access to the enviroment using this renderer.
-    // Since RenderMode would need to be a closure, the environment would need to be static which is impossible without
-    // the use of the internal mutability pattern, which has its own flaws.
-    //
-    // As a result, we opt to pass in the closure when needed.
-    // Alternatively, if we continue using a function pointer, we would need to pass the instance itself.
+    /// The renders produced in cronological order.
     render_list: Vec<RenderFrame>,
 }
 
+/// Describes a lifetime associated closure which takes in a render-mode,
+/// extracts the required details from the environment's state and produces the frame associated
+/// with the render-mode.
 type RenderFn<'a> = &'a mut dyn FnMut(RenderMode) -> Renders;
 
+/// Describes the render-specific operations.
 impl Renderer {
-    /// TODO
+    /// Constructs an instance of the Renderer object with an empty set of frames.
     pub fn new(
         mode: RenderMode,
         no_returns_render: Option<Vec<RenderMode>>,
@@ -87,7 +90,9 @@ pub enum RenderMode {
     Ansi,
     /// TODO
     None,
+    /// TODO
     DepthArray,
+    /// TODO
     SingleDepthArray,
 }
 

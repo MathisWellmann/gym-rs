@@ -93,7 +93,7 @@ where
 /// action.
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct ActionReward<T, E> {
-    /// The current observable state. 
+    /// The current observable state.
     pub observation: T,
     /// The value of the reward produced.
     pub reward: O64,
@@ -114,6 +114,7 @@ pub struct RewardRange {
     upper_bound: O64,
 }
 
+/// Implement a default reward range.
 impl Default for RewardRange {
     fn default() -> Self {
         DEFAULT_REWARD_RANGE.clone()
