@@ -92,9 +92,6 @@ pub enum RenderMode {
     Ansi,
     /// Indicates that renderer should be skipped.
     None,
-    DepthArray,
-    ///
-    SingleDepthArray,
 }
 
 impl Default for RenderMode {
@@ -114,10 +111,18 @@ impl RenderMode {
     const SINGLE_RENDER: &'static [RenderMode] = &[RenderMode::SingleRgbArray];
 }
 
+/// Defines a collection of common structures produced during rendering.
 #[derive(PartialEq, PartialOrd, Debug, Clone, Serialize, Ord, Eq)]
 pub enum Renders {
+    /// Defines the structure produced during the use of the SingleRgbArray mode.
     SingleRgbArray(RenderFrame),
+    /// Defines the collection of frames produced during the RgbArray mode.
     RgbArray(Vec<RenderFrame>),
+    /// Defines the collection of row strings produced to represent the contents
+    /// of the environment when using Ansi mode.
     Ansi(Vec<String>),
+    /// Indicates that no render has been produced.
+    ///
+    /// Most commonly used during Human or None mode.
     None,
 }

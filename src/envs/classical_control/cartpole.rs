@@ -230,13 +230,7 @@ impl CartPoleEnv {
     }
 }
 
-const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[
-    RenderMode::Human,
-    RenderMode::RgbArray,
-    RenderMode::SingleRgbArray,
-    RenderMode::DepthArray,
-    RenderMode::SingleDepthArray,
-];
+const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[RenderMode::Human, RenderMode::RgbArray];
 
 impl Default for Metadata<CartPoleEnv> {
     fn default() -> Self {
