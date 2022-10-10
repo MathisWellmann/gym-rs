@@ -36,7 +36,6 @@ impl Renderer {
         }
     }
 
-    /// TODO
     pub fn render_step<'b>(&mut self, render: RenderFn<'b>) {
         if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
             let render_return = render(self.mode);
@@ -49,7 +48,6 @@ impl Renderer {
         }
     }
 
-    /// TODO
     pub fn get_renders<'b>(&mut self, render: RenderFn<'b>) -> Renders {
         if self.single_render.contains(&self.mode) {
             render(self.mode)
@@ -62,37 +60,40 @@ impl Renderer {
         }
     }
 
-    /// TODO
     pub fn reset(&mut self) {
         self.render_list = Vec::new();
     }
 }
 
+/// Defines various palettes capabling of describing the colour of a pixel.
 #[derive(Debug, new, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RenderColor {
+    /// Holds the red-green-blue values of some pixel.
     RGB(u8, u8, u8),
 }
 
-/// TODO
+/// A surface which holds pixels describing the contents produced during a render.
 #[derive(Debug, new, Clone, PartialEq, PartialOrd, Eq, Ord, Serialize)]
 pub struct RenderFrame(pub Vec<Vec<RenderColor>>);
 
-/// TODO
+/// A collection of various formats describing the type of content produced during a render.
 #[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize, Eq, Ord)]
 pub enum RenderMode {
-    /// TODO
+    /// Indicates that that renderer should be done through the terminal or an external display.
     Human,
-    /// TODO
+    /// Indicates that the renderer should produce a single frame containing RGB pixels which describe the
+    /// current state of the environment.
     SingleRgbArray,
-    /// TODO
+    /// Indicates that the renderer should produce a list containing all the frames collected
+    /// starting from the last reset.
     RgbArray,
-    /// TODO
+    /// Indicates that the renderer should produce a text-representation of the contents found in the
+    /// environments current state
     Ansi,
-    /// TODO
+    /// Indicates that renderer should be skipped.
     None,
-    /// TODO
     DepthArray,
-    /// TODO
+    ///
     SingleDepthArray,
 }
 
@@ -103,20 +104,20 @@ impl Default for RenderMode {
 }
 
 impl RenderMode {
+    /// Defines an empty set of render modes.
+    ///
+    /// This is useful for when you want to create an renderer which shouldn't
+    /// support any rendering at all.
+    pub const DEFAULT: &'static [RenderMode] = &[];
+
     const NO_RETURNS_RENDER: &'static [RenderMode] = &[RenderMode::Human];
     const SINGLE_RENDER: &'static [RenderMode] = &[RenderMode::SingleRgbArray];
-    pub const DEFAULT: &'static [RenderMode] = &[];
 }
 
-/// TODO
 #[derive(PartialEq, PartialOrd, Debug, Clone, Serialize, Ord, Eq)]
 pub enum Renders {
-    /// TODO
     SingleRgbArray(RenderFrame),
-    /// TODO
     RgbArray(Vec<RenderFrame>),
-    /// TODO
     Ansi(Vec<String>),
-    /// TODO
     None,
 }
