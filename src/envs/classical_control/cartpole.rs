@@ -37,30 +37,45 @@ use crate::{
 ///
 /// The problem involves applying the correct forces onto a cart with a pole hinged onto it,
 /// in order to ensure the pole remains within the preconfigured regions.
+/// The agent starts by being assigned random values between (-0.05, 0.05) for all
+/// fields available in the state structure. The agent is rewarded '+1' for every step taken until the episode ends.
+///
+/// The episode ends when any of the following conditions occur:
+///
+/// 1. Termination: [`CartPoleObservation.theta`] is greater than +-12.0 (pole has fallen).
+/// 2. Termination: [`CartPoleObservation.x`] is greater than +- 2.4 (cart is outside bounds).
+/// 3. Truncation: Episode length is greater than 500.
+///
 #[derive(Debug, Clone, Serialize)]
 pub struct CartPoleEnv {
-    pub gravity: O64,
-    pub masscart: O64,
-    pub masspole: O64,
-    pub length: O64,
-    pub force_mag: O64,
-    pub tau: O64,
-    pub kinematics_integrator: KinematicsIntegrator,
-    pub theta_threshold_radians: O64,
-    pub x_threshold: O64,
     pub action_space: Discrete,
     pub observation_space: BoxR<CartPoleObservation>,
     pub render_mode: RenderMode,
-    pub renderer: Renderer,
-    pub screen: Screen,
     pub state: CartPoleObservation,
     pub metadata: Metadata<Self>,
+    /// The gravity constant in the cart pole world.
+    gravity: O64,
+    /// The amount of matter available in the cart.
+    masscart: O64,
+    /// The amount of matter available in the pole.
+    masspole: O64,
+    /// The height of the pole.
+    length: O64,
+    /// The magnitude of the force applied to the pole.
+    force_mag: O64,
+    tau: O64,
+    kinematics_integrator: KinematicsIntegrator,
+    theta_threshold_radians: O64,
+    x_threshold: O64,
+    renderer: Renderer,
+    screen: Screen,
+    steps_beyond_terminated: Option<usize>,
     #[serde(skip_serializing)]
     rand_random: Pcg64,
-    pub steps_beyond_terminated: Option<usize>,
 }
 
 impl CartPoleEnv {
+    /// Creates a cart pole environment using defaults from the paper.
     pub fn new(render_mode: RenderMode) -> Self {
         let (mut rand_random, _) = rand_random(None);
 
@@ -116,15 +131,15 @@ impl CartPoleEnv {
         }
     }
 
-    pub fn total_mass(&self) -> O64 {
+    fn total_mass(&self) -> O64 {
         self.masspole + self.masscart
     }
 
-    pub fn polemass_length(&self) -> O64 {
+    fn polemass_length(&self) -> O64 {
         self.masspole + self.length
     }
 
-    pub fn render(
+    fn render(
         mode: RenderMode,
         screen: &mut Screen,
         metadata: &Metadata<Self>,
