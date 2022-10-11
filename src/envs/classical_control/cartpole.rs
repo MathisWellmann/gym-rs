@@ -31,6 +31,12 @@ use crate::{
     },
 };
 
+/// An environment which implements the cart pole problem described in
+/// [Neuronlike adaptive elements that can solve difficult learning control
+/// problems](https://ieeexplore.ieee.org/document/6313077).
+///
+/// The problem involves applying the correct forces onto a cart with a pole hinged onto it,
+/// in order to ensure the pole remains within the preconfigured regions.
 #[derive(Debug, Clone, Serialize)]
 pub struct CartPoleEnv {
     pub gravity: O64,
@@ -291,6 +297,7 @@ impl UniformSampler for UniformCartPoleObservation {
     }
 }
 
+/// Defines the state found in the cart pole environment.
 #[derive(new, Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 pub struct CartPoleObservation {
     x: O64,
