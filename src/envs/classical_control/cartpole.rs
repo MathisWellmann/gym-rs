@@ -42,34 +42,43 @@ use crate::{
 ///
 /// The episode ends when any of the following conditions occur:
 ///
-/// 1. Termination: [`CartPoleObservation.theta`] is greater than +-12.0 (pole has fallen).
-/// 2. Termination: [`CartPoleObservation.x`] is greater than +- 2.4 (cart is outside bounds).
+/// 1. Termination: [`CartPoleObservation.theta`] is greater than +/-12.0 (pole has fallen).
+/// 2. Termination: [`CartPoleObservation.x`] is greater than +/-2.4 (cart is outside bounds).
 /// 3. Truncation: Episode length is greater than 500.
-///
 #[derive(Debug, Clone, Serialize)]
 pub struct CartPoleEnv {
+    /// The available actions that can be taken.
     pub action_space: Discrete,
+    /// The range of values that can be observed.
     pub observation_space: BoxR<CartPoleObservation>,
+    /// The type of renders produced.
     pub render_mode: RenderMode,
+    /// The current state of the environment.
     pub state: CartPoleObservation,
+    /// Additional pieces of information provided by the environment.
     pub metadata: Metadata<Self>,
-    /// The gravity constant in the cart pole world.
-    gravity: O64,
-    /// The amount of matter available in the cart.
-    masscart: O64,
-    /// The amount of matter available in the pole.
-    masspole: O64,
-    /// The height of the pole.
-    length: O64,
-    /// The magnitude of the force applied to the pole.
-    force_mag: O64,
-    tau: O64,
-    kinematics_integrator: KinematicsIntegrator,
-    theta_threshold_radians: O64,
-    x_threshold: O64,
+    /// The gravity constant applied to the environment..
+    pub gravity: O64,
+    /// The mass of the cart.
+    pub masscart: O64,
+    /// The mass of the pole.
+    pub masspole: O64,
+    /// Half the length of the pole.
+    pub length: O64,
+    /// The default force applied to the pole.
+    pub force_mag: O64,
+    /// The number of seconds between state updates.
+    pub tau: O64,
+    /// The type of integration done on the differential equations found in the paper.
+    pub kinematics_integrator: KinematicsIntegrator,
+    /// The angle that the pole can lean to before an episode is considered terminated.
+    pub theta_threshold_radians: O64,
+    /// The x value that the cart can be at before an episode is considered terminated.
+    pub x_threshold: O64,
+    /// The number of steps taken after the episode was terminated.
+    pub steps_beyond_terminated: Option<usize>,
     renderer: Renderer,
     screen: Screen,
-    steps_beyond_terminated: Option<usize>,
     #[serde(skip_serializing)]
     rand_random: Pcg64,
 }
@@ -259,6 +268,7 @@ impl Default for Metadata<CartPoleEnv> {
     }
 }
 
+/// The sampler responsible for generating an observation using uniform probability.
 pub struct UniformCartPoleObservation {
     x_sampler: UniformOrdered<f64>,
     x_dot_sampler: UniformOrdered<f64>,
@@ -365,8 +375,11 @@ impl Neg for CartPoleObservation {
 }
 
 #[derive(Clone, Debug, Serialize, Eq, PartialEq)]
+/// Describes the available types of integration on cartpole equations.
 pub enum KinematicsIntegrator {
+    /// Euler integration.
     Euler,
+    /// Semi-implicit Euler integration.
     Other,
 }
 
