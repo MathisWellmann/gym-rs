@@ -23,33 +23,47 @@ use sdl2::pixels::Color;
 use sdl2::rect::Point;
 use serde::Serialize;
 
+/// An implementation of the classical reinforcment learning environment, mountain car.
+///
+///
 #[derive(Serialize, Derivative)]
 #[derivative(Debug)]
 pub struct MountainCarEnv {
+    /// The minimum position the car can be spawned at.
     pub min_position: O64,
+    /// The maximum position the cart can be spawned at.
     pub max_position: O64,
+    /// The initial speed of the car.
     pub max_speed: O64,
+    /// The position on the map, where when passed, an episode can be considered terminated.
     pub goal_position: O64,
+    /// The velocity at which an episode can be considered terminated.
     pub goal_velocity: O64,
 
+    /// The force of the cart.
     pub force: O64,
+    /// The gravity constant applied to the environment.
     pub gravity: O64,
 
+    /// The type of renders produced.
     pub render_mode: RenderMode,
-    pub renderer: Renderer,
 
-    pub screen: Screen,
-
+    /// The set of actions which can be taken.
     pub action_space: spaces::Discrete,
+    /// The range of values that can be observed.
     pub observation_space: spaces::BoxR<MountainCarObservation>,
 
+    /// The state of the environment.
     pub state: MountainCarObservation,
 
+    /// Additional information provided by the environment.
     pub metadata: Metadata<Self>,
 
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     rand_random: Pcg64,
+    screen: Screen,
+    renderer: Renderer,
 }
 
 impl Clone for MountainCarEnv {
@@ -90,11 +104,15 @@ impl Default for Metadata<MountainCarEnv> {
 /// Utility structure intended to reduce confusion around meaning of properties.
 #[derive(Debug, new, Copy, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MountainCarObservation {
+    /// The position the car exists on the mountain.
     pub position: O64,
+    /// The velocity the car is travelling at.
     pub velocity: O64,
 }
 
+/// The structure reponsible for uniformly sampling a mountain car observation.
 pub struct UniformMountainCarObservation {
+    /// The sampler responsible for deriving a position.
     pub position_sampler: UniformOrdered<f64>,
 }
 
@@ -302,14 +320,16 @@ impl MountainCarEnv {
         screen.render(mode)
     }
 
-    pub fn new(render_mode: RenderMode, goal_velocity: Option<f64>) -> Self {
+    /// Generates an instance of the mountain car environment using the defaults provided in the
+    /// paper.
+    pub fn new(render_mode: RenderMode) -> Self {
         let (mut rng, _) = rand_random(None);
 
         let min_position = OrderedFloat(-1.2);
         let max_position = OrderedFloat(0.6);
         let max_speed = OrderedFloat(0.07);
         let goal_position = OrderedFloat(0.5);
-        let goal_velocity = OrderedFloat(goal_velocity.unwrap_or(0.));
+        let goal_velocity = OrderedFloat(0.);
 
         let force = OrderedFloat(0.001);
         let gravity = OrderedFloat(0.0025);
@@ -501,7 +521,7 @@ mod tests {
     #[test]
     fn test_run() {
         pretty_env_logger::try_init().unwrap_or(());
-        let mut mc = MountainCarEnv::new(RenderMode::Human, None);
+        let mut mc = MountainCarEnv::new(RenderMode::Human);
         let _state = mc.reset(None, false, None);
 
         let mut end: bool = false;
@@ -529,10 +549,10 @@ mod tests {
 
     #[test]
     fn test_clone() {
-        let mc = MountainCarEnv::new(RenderMode::None, None);
+        let mc = MountainCarEnv::new(RenderMode::None);
         let _mc_cloned = mc.clone();
 
-        let mc2 = MountainCarEnv::new(RenderMode::Human, None);
+        let mc2 = MountainCarEnv::new(RenderMode::Human);
         let _mc2_cloned = mc2.clone();
     }
 }
