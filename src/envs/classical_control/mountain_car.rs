@@ -208,7 +208,7 @@ impl MountainCarEnv {
         screen.consume_events();
 
         let world_width = max_position - min_position;
-        let scale = OrderedFloat(screen.width as f64) / world_width;
+        let scale = OrderedFloat(screen.screen_width() as f64) / world_width;
         let carwidth = 40;
         let carheight = 20;
 
@@ -491,7 +491,7 @@ impl Env for MountainCarEnv {
     }
 
     fn close(&mut self) {
-        self.screen.gui.take();
+        self.screen.close();
     }
 }
 

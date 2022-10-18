@@ -18,8 +18,10 @@ use crate::spaces::BoxR;
 
 use super::renderer::{RenderColor, RenderFrame, RenderMode, Renders};
 
+/// Defines the standard float type that should be used.
 pub type O64 = OrderedFloat<f64>;
 
+/// Clips a value between the left and right bounds.
 pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) -> T {
     if left_bound <= value && value <= right_bound {
         value
@@ -30,31 +32,15 @@ pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) 
     }
 }
 
-pub fn canvas_to_pixels(canvas: &mut WindowCanvas, screen_width: u32) -> RenderFrame {
-    let pixels = canvas
-        .read_pixels(None, PixelFormatEnum::RGB24)
-        .expect("pixels");
-
-    let colours: Vec<RenderColor> = pixels
-        .chunks(3)
-        .map(|chunk| RenderColor::RGB(chunk[0], chunk[1], chunk[2]))
-        .collect();
-
-    let pixels_array: Vec<Vec<RenderColor>> = colours
-        .chunks(screen_width as usize)
-        .map(|chunk| chunk.into())
-        .collect();
-
-    RenderFrame::new(pixels_array)
-}
-
-pub struct ScreenGui {
+/// Defines the structures required from SDL2 to process and render environments.
+struct ScreenGui {
     pub canvas: WindowCanvas,
     pub fps_manager: FPSManager,
     pub event_pump: EventPump,
     pub event_subsystem: EventSubsystem,
 }
 
+/// Defines a structure to encapsulate information about various transformations.
 #[derive(new)]
 pub struct ScreenGuiTransformations {
     src: Option<Rect>,
@@ -66,6 +52,7 @@ pub struct ScreenGuiTransformations {
 }
 
 impl ScreenGuiTransformations {
+    /// Utility method to define a transformation which flips the GUI vertically.
     pub fn with_flip_vertical(self, flip_vertical: bool) -> Self {
         Self {
             flip_vertical,
@@ -80,24 +67,20 @@ impl Default for ScreenGuiTransformations {
     }
 }
 
-impl ScreenGuiTransformations {
-    pub fn center(&self) -> Option<Point> {
-        self.center
-    }
-}
-
+/// Defines a wrapper over SDL2, similar to PyGame to enable rapid development
+/// of GUI environments.
 #[derive(Serialize, Derivative, new)]
 #[derivative(Debug)]
 pub struct Screen {
-    pub height: u32,
-    pub width: u32,
-    pub title: &'static str,
-    pub render_fps: u32,
-    pub mode: RenderMode,
+    height: u32,
+    width: u32,
+    title: &'static str,
+    render_fps: u32,
+    mode: RenderMode,
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     #[new(default)]
-    pub gui: Option<ScreenGui>,
+    gui: Option<ScreenGui>,
 }
 
 impl Clone for Screen {
@@ -113,15 +96,43 @@ impl Clone for Screen {
     }
 }
 
+/// Defines a set of operations to sample an observation for an environment.
 pub trait Sample: SampleUniform {
+    /// Retrieves a randomly generated observation between the given bounds.
     fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self;
 }
 
 impl Screen {
+    /// Closes the process responsible for rendering the environment.
+    pub fn close(&mut self) -> () {
+        self.gui.take();
+    }
+
+    /// Checks whether the screen is still available.
     pub fn is_open(&self) -> bool {
         self.gui.is_some()
     }
 
+    /// Transforms the canvas into pixel coordinates for external consumption.
+    fn canvas_to_pixels(canvas: &mut WindowCanvas, screen_width: u32) -> RenderFrame {
+        let pixels = canvas
+            .read_pixels(None, PixelFormatEnum::RGB24)
+            .expect("pixels");
+
+        let colours: Vec<RenderColor> = pixels
+            .chunks(3)
+            .map(|chunk| RenderColor::RGB(chunk[0], chunk[1], chunk[2]))
+            .collect();
+
+        let pixels_array: Vec<Vec<RenderColor>> = colours
+            .chunks(screen_width as usize)
+            .map(|chunk| chunk.into())
+            .collect();
+
+        RenderFrame::new(pixels_array)
+    }
+
+    /// Outputs the contents found in the GUI buffer to the display surface.
     pub fn render(&mut self, mode: RenderMode) -> Renders {
         match self.gui.as_mut() {
             Some(ScreenGui {
@@ -132,7 +143,7 @@ impl Screen {
                 fps_manager.delay();
                 canvas.present();
                 if [RenderMode::RgbArray, RenderMode::SingleRgbArray].contains(&mode) {
-                    Renders::SingleRgbArray(canvas_to_pixels(canvas, self.width))
+                    Renders::SingleRgbArray(Self::canvas_to_pixels(canvas, self.width))
                 } else {
                     Renders::None
                 }
@@ -141,6 +152,12 @@ impl Screen {
         }
     }
 
+    /// Outputs the width of the internal screen generated.
+    pub fn screen_width(&self) -> u32 {
+        self.width
+    }
+
+    /// Draws new content on the canvas using the closure and transformation instructions provided.
     pub fn draw_on_canvas(
         &mut self,
         using_fn: impl FnMut(&mut WindowCanvas) -> (),
@@ -173,6 +190,7 @@ impl Screen {
         }
     }
 
+    /// Processes all events found in the queue.
     pub fn consume_events(&mut self) {
         match self.gui.as_mut() {
             Some(ScreenGui { event_pump, .. }) => {
@@ -189,6 +207,7 @@ impl Screen {
         }
     }
 
+    /// Generates a window to begin displaying content on.
     pub fn load_gui(&mut self) {
         if self.gui.is_none() {
             let title = self.title;
@@ -232,9 +251,15 @@ impl Screen {
     }
 }
 
+/// Defines a set of common properties used to describe the environment further.
+///
+/// Can be dynamically altered and outputted during a state output to describe
+/// the contents of the state further.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd, Copy, new)]
 pub struct Metadata<T> {
+    /// Defines the render modes supported by the environment.
     pub render_modes: &'static [RenderMode],
+    /// Defines the fps used by the internal renderer.
     pub render_fps: u32,
     marker: PhantomData<T>,
 }

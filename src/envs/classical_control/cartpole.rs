@@ -161,14 +161,14 @@ impl CartPoleEnv {
         screen.load_gui();
         screen.consume_events();
 
+        let screen_width = screen.screen_width();
         let world_width = x_threshold * 2.;
-        let scale = OrderedFloat(screen.width as f64) / world_width;
+        let scale = OrderedFloat(screen_width as f64) / world_width;
         let polewidth: O64 = OrderedFloat(10.);
         let polelen = scale * 2. * length;
         let cartwidth = OrderedFloat(50.);
         let cartheight = OrderedFloat(30.);
 
-        let screen_width = screen.width;
 
         screen.draw_on_canvas(
             |canvas| {
@@ -531,7 +531,7 @@ impl Env for CartPoleEnv {
     }
 
     fn close(&mut self) {
-        self.screen.gui.take();
+        self.screen.close();
     }
 }
 

@@ -1,6 +1,5 @@
+//! A rust implementation of OpenAI's reinforcment library Gym.
 #![deny(missing_docs)]
-
-extern crate log;
 
 /// Contains user-facing interfaces.
 pub mod core;
