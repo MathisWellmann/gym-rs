@@ -3,13 +3,8 @@
 This library aims be be as close to the original OpenAI Gym library written in Python.
 
 If you don't mind Python and would like to use the original implementation from Rust,
-check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
+check out a [OpenAI Gym wrapper](https://github.com/MrRobb/gym-rs).
 
-## Demonstration
-
-![cart_pole](assets/cartpole.png)
-
-![mountain_car](assets/mountain_car.png)
 
 ## Prerequisites
 
@@ -23,9 +18,14 @@ dependency if any form of rendering is to be done.
 ## Examples
 
 ```bash
-cargo run --example=mountain_car
-cargo run --example=cart_pole
+cargo run --example=cartpole
 ```
+![cart_pole](assets/cartpole.png)
+
+```bash
+cargo run --example=mountain_car
+```
+![mountain_car](assets/mountain_car.png)
 
 ## Usage
 
