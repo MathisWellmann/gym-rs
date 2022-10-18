@@ -25,7 +25,13 @@ use serde::Serialize;
 
 /// An implementation of the classical reinforcment learning environment, mountain car.
 ///
+/// The problem involves moving a stochastically placed car on the bottom of a sinusoidal valley
+/// to the top of the hill by applying left and right forces to the car. The car is given a reward
+/// of `-1` for each step taken by the agent, until a terminal step is reached.
 ///
+/// An episode ends when one of the following conditions occur:
+///     1. Termination: The car reaches the goal position.
+///     2. Truncation: The episode exceeds 200 steps.
 #[derive(Serialize, Derivative)]
 #[derivative(Debug)]
 pub struct MountainCarEnv {
@@ -33,7 +39,7 @@ pub struct MountainCarEnv {
     pub min_position: O64,
     /// The maximum position the cart can be spawned at.
     pub max_position: O64,
-    /// The initial speed of the car.
+    /// The max speed the car can reach.
     pub max_speed: O64,
     /// The position on the map, where when passed, an episode can be considered terminated.
     pub goal_position: O64,
