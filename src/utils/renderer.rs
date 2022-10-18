@@ -36,6 +36,7 @@ impl Renderer {
         }
     }
 
+    /// Renders a frame using the given render closure if structure conditions are met.
     pub fn render_step<'b>(&mut self, render: RenderFn<'b>) {
         if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
             let render_return = render(self.mode);
@@ -48,6 +49,7 @@ impl Renderer {
         }
     }
 
+    /// Supplies the list of frames collected thus far.
     pub fn get_renders<'b>(&mut self, render: RenderFn<'b>) -> Renders {
         if self.single_render.contains(&self.mode) {
             render(self.mode)
@@ -60,6 +62,7 @@ impl Renderer {
         }
     }
 
+    /// Empties the collection of frames collected.
     pub fn reset(&mut self) {
         self.render_list = Vec::new();
     }
