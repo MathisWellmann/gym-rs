@@ -32,6 +32,7 @@ cargo run --example=mountain_car
 To use this crate in your project, put this in your Cargo.toml:
 
 ```toml
+[dependencies]
 gym_rs = "1.0.0"
 ```
 
