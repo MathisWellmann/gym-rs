@@ -13,12 +13,19 @@ check out a gym [wrapper](https://github.com/MrRobb/gym-rs).
 
 ## Prerequisites
 
-- SDL2
-- SDL2 GFX
+This library use's SDL2 to enable various forms of rendering. Even when an SDL2
+window is not explictly shown, renders can be saved to files making it a mandatory 
+dependency if any form of rendering is to be done.
+
+- [SDL2](https://wiki.libsdl.org/Installation)
+- [SDL2_gfx](https://www.ferzkopp.net/Software/SDL2_gfx/Docs/html/index.html)
 
 ## Examples
 
-
+```bash
+cargo run --example=mountain_car
+cargo run --example=cart_pole
+```
 
 ## Usage
 
