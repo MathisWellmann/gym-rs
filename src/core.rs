@@ -7,7 +7,7 @@ use serde::Serialize;
 use crate::{
     spaces::BoxR,
     utils::{
-        custom::{Metadata, Sample, O64},
+        custom::{structs::Metadata, traits::Sample, types::O64},
         renderer::{RenderMode, Renders},
     },
 };

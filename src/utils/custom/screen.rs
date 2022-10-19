@@ -1,9 +1,5 @@
-use std::marker::PhantomData;
-
 use derivative::Derivative;
 use derive_new::new;
-use ordered_float::OrderedFloat;
-use rand::{distributions::uniform::SampleUniform, Rng};
 use sdl2::{
     event::Event,
     gfx::framerate::FPSManager,
@@ -14,30 +10,14 @@ use sdl2::{
 };
 use serde::Serialize;
 
-use crate::spaces::BoxR;
-
-use super::renderer::{RenderColor, RenderFrame, RenderMode, Renders};
-
-/// Defines the standard float type that should be used.
-pub type O64 = OrderedFloat<f64>;
-
-/// Clips a value between the left and right bounds.
-pub fn clip<T: PartialEq + PartialOrd>(value: T, left_bound: T, right_bound: T) -> T {
-    if left_bound <= value && value <= right_bound {
-        value
-    } else if value > right_bound {
-        right_bound
-    } else {
-        left_bound
-    }
-}
+use crate::utils::renderer::{RenderColor, RenderFrame, RenderMode, Renders};
 
 /// Defines the structures required from SDL2 to process and render environments.
 struct ScreenGui {
     pub canvas: WindowCanvas,
     pub fps_manager: FPSManager,
     pub event_pump: EventPump,
-    pub event_subsystem: EventSubsystem,
+    // pub event_subsystem: EventSubsystem,
 }
 
 /// Defines a structure to encapsulate information about various transformations.
@@ -95,13 +75,6 @@ impl Clone for Screen {
         }
     }
 }
-
-/// Defines a set of operations to sample an observation for an environment.
-pub trait Sample: SampleUniform {
-    /// Retrieves a randomly generated observation between the given bounds.
-    fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self;
-}
-
 impl Screen {
     /// Closes the process responsible for rendering the environment.
     pub fn close(&mut self) -> () {
@@ -231,9 +204,9 @@ impl Screen {
                 let canvas = window.into_canvas().accelerated().build().unwrap();
                 let event_pump = context.event_pump().expect("Could not recieve event pump.");
                 let mut fps_manager = FPSManager::new();
-                let event_subsystem = context
-                    .event()
-                    .expect("Event subsystem was not initialized.");
+                // let event_subsystem = context
+                //     .event()
+                //     .expect("Event subsystem was not initialized.");
                 fps_manager
                     .set_framerate(render_fps)
                     .expect("Framerate was unable to be set.");
@@ -241,7 +214,7 @@ impl Screen {
                 ScreenGui {
                     canvas,
                     event_pump,
-                    event_subsystem,
+                    // event_subsystem,
                     fps_manager,
                 }
             };
@@ -249,17 +222,4 @@ impl Screen {
             self.gui = Some(gui);
         }
     }
-}
-
-/// Defines a set of common properties used to describe the environment further.
-///
-/// Can be dynamically altered and outputted during a state output to describe
-/// the contents of the state further.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, Ord, PartialOrd, Copy, new)]
-pub struct Metadata<T> {
-    /// Defines the render modes supported by the environment.
-    pub render_modes: &'static [RenderMode],
-    /// Defines the fps used by the internal renderer.
-    pub render_fps: u32,
-    marker: PhantomData<T>,
 }

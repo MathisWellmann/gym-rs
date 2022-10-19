@@ -25,7 +25,11 @@ use crate::{
     core::{ActionReward, Env, EnvProperties},
     spaces::{BoxR, Discrete, Space},
     utils::{
-        custom::{Metadata, Sample, Screen, ScreenGuiTransformations, O64},
+        custom::{
+            screen::{Screen, ScreenGuiTransformations},
+            structs::Metadata,
+            types::O64, traits::Sample,
+        },
         renderer::{RenderMode, Renderer, Renders},
         seeding::{self, rand_random},
     },
