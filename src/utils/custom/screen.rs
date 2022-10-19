@@ -6,7 +6,7 @@ use sdl2::{
     pixels::PixelFormatEnum,
     rect::{Point, Rect},
     render::WindowCanvas,
-    EventPump, EventSubsystem,
+    EventPump,
 };
 use serde::Serialize;
 
