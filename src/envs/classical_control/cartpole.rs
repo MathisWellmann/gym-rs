@@ -405,8 +405,6 @@ impl Env for CartPoleEnv {
             action
         );
 
-        if self.steps_beyond_terminated.is_some() {}
-
         let CartPoleObservation {
             mut x,
             mut x_dot,

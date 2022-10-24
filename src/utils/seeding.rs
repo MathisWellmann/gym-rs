@@ -22,3 +22,18 @@ pub fn rand_random(seed: Option<u64>) -> (Pcg64, u64) {
 
     return (generator, seed_no);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::rand_random;
+
+    // NOTE: The negative case cannot be tested.
+    #[test]
+    fn given_seed_when_rand_random_then_generator_is_created_using_seed() {
+        let seed_no = 42;
+        let (_generator, generator_seed) = rand_random(Some(seed_no));
+
+        assert_eq!(seed_no, generator_seed);
+    }
+
+}
