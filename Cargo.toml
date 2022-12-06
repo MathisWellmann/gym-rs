@@ -1,44 +1,34 @@
 [package]
 name = "gym-rs"
-version = "0.2.1"
+version = "1.0.0"
 authors = ["MathisWellmann <wellmannmathis@gmail.com>"]
 edition = "2018"
 license-file = "LICENSE"
 description = "OpenAI's Gym written in pure Rust"
 repository = "https://github.com/MathisWellmann/gym-rs"
 readme = "README.md"
-keywords = [
-    "ai",
-    "ml",
-    "physical",
-    "environment",
-    "benchmark",
-]
-categories = [
-    "simulation",
-    "science",
-    "algorithms",
-]
-exclude = [
-    "img/"
-]
+keywords = ["ai", "ml", "physical", "environment", "benchmark"]
+categories = ["simulation", "science", "algorithms"]
+exclude = ["img/"]
 
 [dependencies]
-rand = "^0.7.3"
-rand_pcg = "0.2.1"
+rand = { version = "0.8" }
+rand_pcg = "0.3"
 log = "0.4.11"
 pretty_env_logger = "0.4.0"
 num = "0.3.0"
 find_folder = "0.3.0"
 failure = "0.1.8"
 plotters = "0.3.0"
-
+derive-new = "0.5"
 cosyne = { version = "0.3.2", optional = true }
-
-[[example]]
-name = "cart_pole"
-required-features = ["cosyne"]
-
-[[example]]
-name = "pendulum"
-required-features = ["cosyne"]
+sdl2 = { version = "0.35", features = ["bundled", "gfx"] }
+serde = { version = "1.0", features = ["derive"] }
+derivative = { version = "2.2" }
+nalgebra = "0.31"
+ordered-float = { git = "https://github.com/urmzd/rust-ordered-float.git", features = [
+    "serde",
+    "rand",
+    "std"
+] }
+num-traits = "0.2"
