@@ -28,7 +28,8 @@ use crate::{
         custom::{
             screen::{Screen, ScreenGuiTransformations},
             structs::Metadata,
-            types::O64, traits::Sample,
+            traits::Sample,
+            types::O64,
         },
         renderer::{RenderMode, Renderer, Renders},
         seeding::{self, rand_random},

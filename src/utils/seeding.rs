@@ -9,12 +9,14 @@ use rand_pcg::Pcg64;
 /// # Examples
 ///
 /// ```rust
+/// use gym_rs::utils::seeding::rand_random;
+///
 /// // Generates a PRNG using a random seed derived from the OS.
-/// rand_random(None)
+/// rand_random(None);
 ///
 /// // Generates a PRNG using the given seed.
-/// let (generator, seed_no) = rand_random(64)
-/// assert_eq!(seed_no, 64)
+/// let (generator, seed_no) = rand_random(Some(64));
+/// assert_eq!(seed_no, 64);
 /// ```
 pub fn rand_random(seed: Option<u64>) -> (Pcg64, u64) {
     let seed_no = seed.unwrap_or((&mut thread_rng()).gen());
@@ -35,5 +37,4 @@ mod tests {
 
         assert_eq!(seed_no, generator_seed);
     }
-
 }
