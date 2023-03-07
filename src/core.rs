@@ -24,7 +24,7 @@ const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
 /// Defines a common set of operations available to different environments.
 pub trait Env: Clone + Debug + Serialize + EnvProperties
 where
-    Self::Observation: Sample + Into<Vec<f64>>,
+    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy,
 {
     /// The type of action supported.
     type Action;
