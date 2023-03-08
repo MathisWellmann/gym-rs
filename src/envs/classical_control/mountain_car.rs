@@ -4,7 +4,6 @@ use rand::distributions::uniform::{SampleUniform, UniformSampler};
 use rand::distributions::Uniform;
 use rand::prelude::Distribution;
 use rand::Rng;
-use sdl2::gfx::primitives::DrawRenderer;
 use std::fmt::Debug;
 use std::iter::zip;
 
@@ -15,7 +14,6 @@ use crate::utils::custom::structs::Metadata;
 use crate::utils::custom::traits::Sample;
 use crate::utils::custom::types::O64;
 use crate::utils::custom::util_fns::clip;
-use crate::utils::renderer::{RenderMode, Renderer, Renders};
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
@@ -55,9 +53,6 @@ pub struct MountainCarEnv {
     /// The gravity constant applied to the environment.
     pub gravity: O64,
 
-    /// The type of renders produced.
-    pub render_mode: RenderMode,
-
     /// The set of actions which can be taken.
     pub action_space: spaces::Discrete,
     /// The range of values that can be observed.
@@ -72,8 +67,6 @@ pub struct MountainCarEnv {
     #[serde(skip_serializing)]
     #[derivative(Debug = "ignore")]
     rand_random: Pcg64,
-    screen: Screen,
-    renderer: Renderer,
 }
 
 impl Clone for MountainCarEnv {
@@ -86,9 +79,6 @@ impl Clone for MountainCarEnv {
             goal_velocity: self.goal_velocity.clone(),
             force: self.force.clone(),
             gravity: self.gravity.clone(),
-            render_mode: self.render_mode.clone(),
-            renderer: self.renderer.clone(),
-            screen: self.screen.clone(),
             action_space: self.action_space.clone(),
             observation_space: self.observation_space.clone(),
             state: self.state.clone(),
@@ -98,16 +88,9 @@ impl Clone for MountainCarEnv {
     }
 }
 
-const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
-    RenderMode::Human,
-    RenderMode::RgbArray,
-    RenderMode::SingleRgbArray,
-    RenderMode::None,
-];
-
 impl Default for Metadata<MountainCarEnv> {
     fn default() -> Self {
-        Metadata::new(MOUNTAIN_CAR_RENDER_MODES, 30)
+        Metadata::new(&[], 30)
     }
 }
 
@@ -197,142 +180,9 @@ impl MountainCarEnv {
             .collect()
     }
 
-    fn render(
-        mode: RenderMode,
-        max_position: O64,
-        min_position: O64,
-        goal_position: O64,
-        state: MountainCarObservation,
-        screen: &mut Screen,
-        metadata: &Metadata<Self>,
-    ) -> Renders {
-        assert!(metadata.render_modes.contains(&mode));
-
-        screen.load_gui();
-        screen.consume_events();
-
-        let world_width = max_position - min_position;
-        let scale = OrderedFloat(screen.screen_width() as f64) / world_width;
-        let carwidth = 40;
-        let carheight = 20;
-
-        screen.draw_on_canvas(
-            |internal_canvas| {
-                internal_canvas.set_draw_color(Color::WHITE);
-                internal_canvas.clear();
-
-                let pos = state.position;
-
-                let xs: Vec<_> = (0..100)
-                    .into_iter()
-                    .map(|index| (((max_position - min_position) / 100.) * index as f64))
-                    .map(|value| value + min_position)
-                    .collect();
-
-                let ys: Vec<_> = Self::height(&xs);
-                let xys: Vec<Point> = zip(
-                    xs.iter().map(|value| (value - min_position) * scale),
-                    ys.iter().map(|value| value * scale),
-                )
-                .map(|(x, y)| {
-                    Point::new(x.floor().into_inner() as i32, y.floor().into_inner() as i32)
-                })
-                .collect();
-
-                internal_canvas.set_draw_color(Color::BLACK);
-                internal_canvas.draw_lines(xys.as_slice()).unwrap();
-
-                let clearance = 10f64;
-
-                let (l, r, t, b) = (-carwidth / 2, carwidth / 2, carheight, 0);
-                let coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
-                    let point = Point2::new(x as f64, y as f64);
-                    let desired_angle = (OrderedFloat(3.) * pos).cos().into_inner();
-                    let rotation_matrix = Rotation2::new(desired_angle);
-                    let rotated_point = rotation_matrix.transform_point(&point);
-
-                    let (x, y) = (rotated_point.x, rotated_point.y);
-
-                    let new_x = OrderedFloat(x) + (pos - min_position) * scale;
-                    let new_y = OrderedFloat(y)
-                        + clearance
-                        + Self::height(&vec![pos]).pop().unwrap() * scale;
-
-                    (new_x, new_y)
-                });
-
-                let coords_x = coords.map(|coord| coord.0.floor().into_inner() as i16);
-                let coords_y = coords.map(|coord| coord.1.floor().into_inner() as i16);
-
-                internal_canvas
-                    .aa_polygon(&coords_x, &coords_y, Color::BLACK)
-                    .unwrap();
-
-                internal_canvas
-                    .filled_polygon(&coords_x, &coords_y, Color::BLACK)
-                    .unwrap();
-
-                for (x, y) in [(carwidth as f64 / 4., 0.), ((-carwidth as f64 / 4.), 0.)] {
-                    let point = Point2::new(x as f64, y as f64);
-                    let desired_angle = ((OrderedFloat(3.) * pos).cos()).into_inner();
-                    let rotation_matrix = Rotation2::new(desired_angle);
-                    let rotated_point = rotation_matrix.transform_point(&point);
-
-                    let (x, y) = (OrderedFloat(rotated_point.x), OrderedFloat(rotated_point.y));
-
-                    let (wheel_x, wheel_y) = (
-                        (x + (pos - min_position) * scale).floor().into_inner() as i16,
-                        (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale)
-                            .floor()
-                            .into_inner() as i16,
-                    );
-
-                    let rad = (carheight as f64 / 2.5).floor() as i16;
-
-                    internal_canvas
-                        .aa_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
-                        .unwrap();
-
-                    internal_canvas
-                        .filled_circle(wheel_x, wheel_y, rad, Color::RGB(128, 128, 128))
-                        .unwrap();
-                }
-
-                let flagx = ((goal_position - min_position) * scale)
-                    .floor()
-                    .into_inner() as i16;
-                let flagy1 = (Self::height(&vec![goal_position]).pop().unwrap() * scale)
-                    .floor()
-                    .into_inner() as i16;
-                let flagy2 = flagy1 + 50;
-                internal_canvas
-                    .vline(flagx, flagy1, flagy2, Color::BLACK)
-                    .unwrap();
-
-                internal_canvas
-                    .aa_polygon(
-                        &vec![flagx, flagx, flagx + 25],
-                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
-                        Color::RGB(204, 204, 0),
-                    )
-                    .unwrap();
-                internal_canvas
-                    .filled_polygon(
-                        &vec![flagx, flagx, flagx + 25],
-                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
-                        Color::RGB(204, 204, 0),
-                    )
-                    .unwrap();
-            },
-            ScreenGuiTransformations::default(),
-        );
-
-        screen.render(mode)
-    }
-
     /// Generates an instance of the mountain car environment using the defaults provided in the
     /// paper.
-    pub fn new(render_mode: RenderMode) -> Self {
+    pub fn new() -> Self {
         let (mut rng, _) = rand_random(None);
 
         let min_position = OrderedFloat(-1.2);
@@ -347,12 +197,9 @@ impl MountainCarEnv {
         let low = MountainCarObservation::new(min_position, -max_speed);
         let high = MountainCarObservation::new(max_position, max_speed);
 
-        let renderer = Renderer::new(render_mode, None, None);
-
         let state = MountainCarObservation::sample_between(&mut rng, None);
 
         let metadata = Metadata::default();
-        let screen = Screen::new(400, 600, "Mountain Car", metadata.render_fps, render_mode);
 
         let action_space = spaces::Discrete(3);
         let observation_space = spaces::BoxR::new(low, high);
@@ -367,16 +214,11 @@ impl MountainCarEnv {
             force,
             gravity,
 
-            render_mode,
-            renderer,
-
             action_space,
             observation_space,
 
             state,
             rand_random: rng,
-
-            screen,
 
             metadata,
         }
@@ -417,7 +259,6 @@ impl Env for MountainCarEnv {
         let reward: O64 = OrderedFloat(-1.0);
 
         self.state = MountainCarObservation { position, velocity };
-        self.render(self.render_mode);
 
         ActionReward {
             observation: self.state,
@@ -425,33 +266,6 @@ impl Env for MountainCarEnv {
             done,
             truncated: false,
             info: None,
-        }
-    }
-
-    fn render(&mut self, mode: RenderMode) -> Renders {
-        let max_position = self.max_position;
-        let min_position = self.min_position;
-        let goal_position = self.goal_position;
-        let state = self.state;
-        let screen = &mut self.screen;
-        let metadata = &self.metadata;
-
-        let render_fn = &mut |mode| {
-            Self::render(
-                mode,
-                max_position,
-                min_position,
-                goal_position,
-                state,
-                screen,
-                metadata,
-            )
-        };
-
-        if self.render_mode == RenderMode::None {
-            self.renderer.get_renders(render_fn)
-        } else {
-            render_fn(mode)
         }
     }
 
@@ -466,27 +280,6 @@ impl Env for MountainCarEnv {
 
         self.state = MountainCarObservation::sample_between(&mut self.rand_random, options);
 
-        self.renderer.reset();
-
-        let max_position = self.max_position;
-        let min_position = self.min_position;
-        let goal_position = self.goal_position;
-        let state = self.state;
-        let screen = &mut self.screen;
-        let metadata = &self.metadata;
-
-        self.renderer.render_step(&mut |mode| {
-            Self::render(
-                mode,
-                max_position,
-                min_position,
-                goal_position,
-                state,
-                screen,
-                metadata,
-            )
-        });
-
         if return_info {
             (self.state, Some(()))
         } else {
@@ -494,9 +287,7 @@ impl Env for MountainCarEnv {
         }
     }
 
-    fn close(&mut self) {
-        self.screen.close();
-    }
+    fn close(&mut self) {}
 }
 
 impl EnvProperties for MountainCarEnv

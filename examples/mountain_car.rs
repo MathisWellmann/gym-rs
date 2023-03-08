@@ -1,13 +1,12 @@
 use gym_rs::{
     core::{ActionReward, Env},
     envs::classical_control::mountain_car::MountainCarEnv,
-    utils::renderer::RenderMode,
 };
 use rand::{thread_rng, Rng};
 
 fn main() {
     pretty_env_logger::try_init().unwrap_or(());
-    let mut mc = MountainCarEnv::new(RenderMode::Human);
+    let mut mc = MountainCarEnv::new();
     let _state = mc.reset(None, false, None);
 
     let mut end: bool = false;

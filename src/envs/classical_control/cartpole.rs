@@ -31,7 +31,6 @@ use crate::{
             traits::Sample,
             types::O64,
         },
-        renderer::{RenderMode, Renderer, Renders},
         seeding::{self, rand_random},
     },
 };
@@ -56,8 +55,6 @@ pub struct CartPoleEnv {
     pub action_space: Discrete,
     /// The range of values that can be observed.
     pub observation_space: BoxR<CartPoleObservation>,
-    /// The type of renders produced.
-    pub render_mode: RenderMode,
     /// The current state of the environment.
     pub state: CartPoleObservation,
     /// Additional pieces of information provided by the environment.
@@ -82,15 +79,13 @@ pub struct CartPoleEnv {
     pub x_threshold: O64,
     /// The number of steps taken after the episode was terminated.
     pub steps_beyond_terminated: Option<usize>,
-    renderer: Renderer,
-    screen: Screen,
     #[serde(skip_serializing)]
     rand_random: Pcg64,
 }
 
 impl CartPoleEnv {
     /// Creates a cart pole environment using defaults from the paper.
-    pub fn new(render_mode: RenderMode) -> Self {
+    pub fn new() -> Self {
         let (mut rand_random, _) = rand_random(None);
 
         let gravity = OrderedFloat(9.8);
@@ -114,10 +109,7 @@ impl CartPoleEnv {
         let action_space = Discrete(2);
         let observation_space = BoxR::new(-high, high);
 
-        let renderer = Renderer::new(render_mode, None, None);
-
         let metadata = Metadata::default();
-        let screen = Screen::new(400, 600, "Cart Pole", metadata.render_fps, render_mode);
 
         let state = CartPoleObservation::sample_between(&mut rand_random, None);
 
@@ -135,9 +127,6 @@ impl CartPoleEnv {
             x_threshold,
             action_space,
             observation_space,
-            render_mode,
-            renderer,
-            screen,
             state,
             metadata,
             rand_random,
@@ -152,123 +141,11 @@ impl CartPoleEnv {
     fn polemass_length(&self) -> O64 {
         self.masspole + self.length
     }
-
-    fn render(
-        mode: RenderMode,
-        screen: &mut Screen,
-        metadata: &Metadata<Self>,
-        x_threshold: O64,
-        length: O64,
-        state: CartPoleObservation,
-    ) -> Renders {
-        assert!(metadata.render_modes.contains(&mode));
-
-        screen.load_gui();
-        screen.consume_events();
-
-        let screen_width = screen.screen_width();
-        let world_width = x_threshold * 2.;
-        let scale = OrderedFloat(screen_width as f64) / world_width;
-        let polewidth: O64 = OrderedFloat(10.);
-        let polelen = scale * 2. * length;
-        let cartwidth = OrderedFloat(50.);
-        let cartheight = OrderedFloat(30.);
-
-        screen.draw_on_canvas(
-            |canvas| {
-                canvas.set_draw_color(pixels::Color::WHITE);
-                canvas.clear();
-
-                let (mut l, mut r, mut t, mut b) = (
-                    -cartwidth / OrderedFloat(2f64),
-                    cartwidth / OrderedFloat(2f64),
-                    cartheight / OrderedFloat(2f64),
-                    -cartheight / OrderedFloat(2f64),
-                );
-
-                let axleoffset = cartheight / OrderedFloat(4.0);
-                let cartx = state.x * scale + OrderedFloat(screen_width as f64) / OrderedFloat(2.0);
-                let carty = OrderedFloat(100.);
-                let cart_coords = [(l, b), (l, t), (r, t), (r, b)]
-                    .map(|(x, y)| (x + cartx, y + carty))
-                    .map(|(x, y)| (x.floor().into_inner() as i16, y.floor().into_inner() as i16));
-
-                let cart_coords_x = &cart_coords.map(|coord| coord.0);
-                let cart_coords_y = &cart_coords.map(|coord| coord.1);
-
-                canvas
-                    .aa_polygon(cart_coords_x, cart_coords_y, pixels::Color::BLACK)
-                    .unwrap();
-
-                canvas
-                    .filled_polygon(cart_coords_x, cart_coords_y, pixels::Color::BLACK)
-                    .unwrap();
-
-                (l, r, t, b) = (
-                    -polewidth / OrderedFloat(2f64),
-                    polewidth / OrderedFloat(2f64),
-                    polelen - polewidth / OrderedFloat(2f64),
-                    -polewidth / OrderedFloat(2f64),
-                );
-
-                let pole_coords = [(l, b), (l, t), (r, t), (r, b)].map(|(x, y)| {
-                    let rotation_matrix = na::Rotation2::new(-state.theta.into_inner());
-                    let point = na::Point2::new(x.into_inner(), y.into_inner());
-                    let rotated_point = rotation_matrix * point;
-                    (
-                        rotated_point.x + cartx.into_inner(),
-                        rotated_point.y + (carty + axleoffset).into_inner(),
-                    )
-                });
-
-                let pole_coords_x = &pole_coords.map(|coord| coord.0 as i16);
-                let pole_coords_y = &pole_coords.map(|coord| coord.1 as i16);
-
-                canvas
-                    .aa_polygon(pole_coords_x, pole_coords_y, Color::RGB(202, 152, 101))
-                    .unwrap();
-                canvas
-                    .filled_polygon(pole_coords_x, pole_coords_y, Color::RGB(202, 152, 101))
-                    .unwrap();
-
-                canvas
-                    .aa_circle(
-                        cartx.floor().into_inner() as i16,
-                        (carty + axleoffset).floor().into_inner() as i16,
-                        (polewidth / OrderedFloat(2f64)).floor().into_inner() as i16,
-                        Color::RGB(129, 132, 203),
-                    )
-                    .unwrap();
-                canvas
-                    .filled_circle(
-                        cartx.floor().into_inner() as i16,
-                        (carty + axleoffset).floor().into_inner() as i16,
-                        (polewidth / OrderedFloat(2f64)).floor().into_inner() as i16,
-                        Color::RGB(129, 132, 203),
-                    )
-                    .unwrap();
-
-                canvas
-                    .hline(
-                        0,
-                        screen_width as i16,
-                        carty.floor().into_inner() as i16,
-                        Color::BLACK,
-                    )
-                    .unwrap();
-            },
-            ScreenGuiTransformations::default(),
-        );
-
-        screen.render(mode)
-    }
 }
-
-const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[RenderMode::Human, RenderMode::RgbArray];
 
 impl Default for Metadata<CartPoleEnv> {
     fn default() -> Self {
-        Metadata::new(CART_POLE_RENDER_MODES, 50)
+        Metadata::new(&[], 50)
     }
 }
 
@@ -464,15 +341,10 @@ impl Env for CartPoleEnv {
             OrderedFloat(0.)
         };
 
-        let screen = &mut self.screen;
         let metadata = &self.metadata;
         let x_threshold = self.x_threshold;
         let length = self.length;
         let state = self.state;
-
-        self.renderer.render_step(&mut |mode| {
-            Self::render(mode, screen, metadata, x_threshold, length, state)
-        });
 
         ActionReward {
             observation: self.state,
@@ -494,20 +366,12 @@ impl Env for CartPoleEnv {
 
         self.state = CartPoleObservation::sample_between(&mut self.rand_random, options);
 
-        self.renderer.reset();
-
-        let screen = &mut self.screen;
         let metadata = &self.metadata;
         let x_threshold = self.x_threshold;
         let length = self.length;
         let state = self.state;
 
         self.steps_beyond_terminated = None;
-
-        self.renderer.reset();
-        self.renderer.render_step(&mut |mode| {
-            Self::render(mode, screen, metadata, x_threshold, length, state)
-        });
 
         if return_info {
             (self.state, Some(()))
@@ -516,25 +380,7 @@ impl Env for CartPoleEnv {
         }
     }
 
-    fn render(&mut self, mode: RenderMode) -> crate::utils::renderer::Renders {
-        let screen = &mut self.screen;
-        let metadata = &self.metadata;
-        let x_threshold = self.x_threshold;
-        let length = self.length;
-        let state = self.state;
-
-        let render_fn =
-            &mut |mode| Self::render(mode, screen, metadata, x_threshold, length, state);
-        if self.render_mode != RenderMode::None {
-            self.renderer.get_renders(render_fn)
-        } else {
-            render_fn(mode)
-        }
-    }
-
-    fn close(&mut self) {
-        self.screen.close();
-    }
+    fn close(&mut self) {}
 }
 
 impl EnvProperties for CartPoleEnv {

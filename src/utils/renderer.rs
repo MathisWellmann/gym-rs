@@ -1,7 +1,9 @@
 use derive_new::new;
 use serde::Serialize;
 
-/// A structure which lazily invokes renders and stores the resulting frames.
+use std::sync::{Arc, Mutex};
+
+/// A thread-safe structure which lazily invokes renders and stores the resulting frames.
 #[derive(Debug, Serialize, Clone)]
 pub struct Renderer {
     /// A list of render modes which should not produce any frames.
@@ -11,8 +13,9 @@ pub struct Renderer {
     single_render: Vec<RenderMode>,
     /// The render mode associated with the environment holding this render-responsible object.
     mode: RenderMode,
-    /// The renders produced in cronological order.
-    render_list: Vec<RenderFrame>,
+    #[serde(skip_serializing)]
+    /// The renders produced in chronological order.
+    render_list: Arc<Mutex<Vec<RenderFrame>>>,
 }
 
 /// Describes a lifetime associated closure which takes in a render-mode,
@@ -32,7 +35,7 @@ impl Renderer {
             no_returns_render: no_returns_render.unwrap_or(RenderMode::NO_RETURNS_RENDER.to_vec()),
             single_render: single_render.unwrap_or(RenderMode::SINGLE_RENDER.to_vec()),
             mode,
-            render_list: Vec::new(),
+            render_list: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
@@ -42,7 +45,7 @@ impl Renderer {
             let render_return = render(self.mode);
             if !self.no_returns_render.contains(&self.mode) {
                 match render_return {
-                    Renders::SingleRgbArray(frame) => self.render_list.push(frame),
+                    Renders::SingleRgbArray(frame) => self.render_list.lock().unwrap().push(frame),
                     _ => (),
                 }
             }
@@ -54,8 +57,8 @@ impl Renderer {
         if self.single_render.contains(&self.mode) {
             render(self.mode)
         } else if self.mode != RenderMode::None && !self.no_returns_render.contains(&self.mode) {
-            let renders = self.render_list.clone();
-            self.render_list = Vec::new();
+            let renders = self.render_list.lock().unwrap().clone();
+            self.render_list.lock().unwrap().clear();
             Renders::RgbArray(renders)
         } else {
             Renders::None
@@ -64,7 +67,7 @@ impl Renderer {
 
     /// Empties the collection of frames collected.
     pub fn reset(&mut self) {
-        self.render_list = Vec::new();
+        self.render_list.lock().unwrap().clear();
     }
 }
 

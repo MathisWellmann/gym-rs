@@ -8,7 +8,7 @@ use rand::{thread_rng, Rng};
 fn main() {
     pretty_env_logger::try_init().unwrap_or(());
 
-    let mut env = CartPoleEnv::new(RenderMode::Human);
+    let mut env = CartPoleEnv::new();
     env.reset(None, false, None);
 
     let mut rewards = vec![];

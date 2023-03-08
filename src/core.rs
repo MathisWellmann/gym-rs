@@ -6,10 +6,7 @@ use serde::Serialize;
 
 use crate::{
     spaces::BoxR,
-    utils::{
-        custom::{structs::Metadata, traits::Sample, types::O64},
-        renderer::{RenderMode, Renders},
-    },
+    utils::custom::{structs::Metadata, traits::Sample, types::O64},
 };
 
 /// Defines the range of values that can be outputted by a given environment.
@@ -18,13 +15,10 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
     upper_bound: OrderedFloat(f64::INFINITY),
 });
 
-/// Defines the render mode set by a default environment instances.
-const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
-
 /// Defines a common set of operations available to different environments.
-pub trait Env: Clone + Debug + Serialize + EnvProperties
+pub trait Env: Clone + Debug + Serialize + EnvProperties + Send + Sync
 where
-    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy,
+    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send + Sync,
 {
     /// The type of action supported.
     type Action;
@@ -49,9 +43,6 @@ where
         options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>);
 
-    /// Produces the renders, if any, associated with the given mode.
-    fn render(&mut self, mode: RenderMode) -> Renders;
-
     /// Closes any open resources associated with the internal rendering service.
     fn close(&mut self);
 }
@@ -71,11 +62,6 @@ where
 
     /// Provides the random number generator responsible for seeding states.
     fn rand_random(&self) -> &Pcg64;
-
-    /// Provides the current render mode.
-    fn render_mode(&self) -> &RenderMode {
-        DEFAULT_RENDER_MODE
-    }
 
     /// Provides the range of reward values that can be outputted by this environment.
     fn reward_range(&self) -> &RewardRange {
