@@ -5,11 +5,10 @@ use rand::distributions::Uniform;
 use rand::prelude::Distribution;
 use rand::Rng;
 use std::fmt::Debug;
-use std::iter::zip;
 
 use crate::core::{ActionReward, Env, EnvProperties};
 use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::screen::{Screen, ScreenGuiTransformations};
+
 use crate::utils::custom::structs::Metadata;
 use crate::utils::custom::traits::Sample;
 use crate::utils::custom::types::O64;
@@ -17,12 +16,10 @@ use crate::utils::custom::util_fns::clip;
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
-use na::{Point2, Rotation2};
-use nalgebra as na;
+
 use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
+
 use serde::Serialize;
 
 /// An implementation of the classical reinforcment learning environment, mountain car.
@@ -103,7 +100,7 @@ pub struct MountainCarObservation {
     pub velocity: O64,
 }
 
-/// The structure reponsible for uniformly sampling a mountain car observation.
+/// The structure responsible for uniformly sampling a mountain car observation.
 pub struct UniformMountainCarObservation {
     /// The sampler responsible for deriving a position.
     pub position_sampler: UniformOrdered<f64>,
@@ -179,50 +176,6 @@ impl MountainCarEnv {
             .map(|value| OrderedFloat((3. * value.into_inner()).sin() * 0.45 + 0.55))
             .collect()
     }
-
-    /// Generates an instance of the mountain car environment using the defaults provided in the
-    /// paper.
-    pub fn new() -> Self {
-        let (mut rng, _) = rand_random(None);
-
-        let min_position = OrderedFloat(-1.2);
-        let max_position = OrderedFloat(0.6);
-        let max_speed = OrderedFloat(0.07);
-        let goal_position = OrderedFloat(0.5);
-        let goal_velocity = OrderedFloat(0.);
-
-        let force = OrderedFloat(0.001);
-        let gravity = OrderedFloat(0.0025);
-
-        let low = MountainCarObservation::new(min_position, -max_speed);
-        let high = MountainCarObservation::new(max_position, max_speed);
-
-        let state = MountainCarObservation::sample_between(&mut rng, None);
-
-        let metadata = Metadata::default();
-
-        let action_space = spaces::Discrete(3);
-        let observation_space = spaces::BoxR::new(low, high);
-
-        Self {
-            min_position,
-            max_position,
-            max_speed,
-            goal_position,
-            goal_velocity,
-
-            force,
-            gravity,
-
-            action_space,
-            observation_space,
-
-            state,
-            rand_random: rng,
-
-            metadata,
-        }
-    }
 }
 
 impl Env for MountainCarEnv {
@@ -288,6 +241,49 @@ impl Env for MountainCarEnv {
     }
 
     fn close(&mut self) {}
+
+    /// paper.
+    fn new() -> Self {
+        let (mut rng, _) = rand_random(None);
+
+        let min_position = OrderedFloat(-1.2);
+        let max_position = OrderedFloat(0.6);
+        let max_speed = OrderedFloat(0.07);
+        let goal_position = OrderedFloat(0.5);
+        let goal_velocity = OrderedFloat(0.);
+
+        let force = OrderedFloat(0.001);
+        let gravity = OrderedFloat(0.0025);
+
+        let low = MountainCarObservation::new(min_position, -max_speed);
+        let high = MountainCarObservation::new(max_position, max_speed);
+
+        let state = MountainCarObservation::sample_between(&mut rng, None);
+
+        let metadata = Metadata::default();
+
+        let action_space = spaces::Discrete(3);
+        let observation_space = spaces::BoxR::new(low, high);
+
+        Self {
+            min_position,
+            max_position,
+            max_speed,
+            goal_position,
+            goal_velocity,
+
+            force,
+            gravity,
+
+            action_space,
+            observation_space,
+
+            state,
+            rand_random: rng,
+
+            metadata,
+        }
+    }
 }
 
 impl EnvProperties for MountainCarEnv

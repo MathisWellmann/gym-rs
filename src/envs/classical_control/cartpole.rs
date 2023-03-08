@@ -1,10 +1,7 @@
 use log::warn;
-use nalgebra as na;
+
 use ordered_float::{impl_rand::UniformOrdered, Float};
-use sdl2::{
-    gfx::primitives::DrawRenderer,
-    pixels::{self, Color},
-};
+
 use std::{f64::consts::PI, ops::Neg};
 
 use derive_new::new;
@@ -25,12 +22,7 @@ use crate::{
     core::{ActionReward, Env, EnvProperties},
     spaces::{BoxR, Discrete, Space},
     utils::{
-        custom::{
-            screen::{Screen, ScreenGuiTransformations},
-            structs::Metadata,
-            traits::Sample,
-            types::O64,
-        },
+        custom::{structs::Metadata, traits::Sample, types::O64},
         seeding::{self, rand_random},
     },
 };
@@ -84,56 +76,6 @@ pub struct CartPoleEnv {
 }
 
 impl CartPoleEnv {
-    /// Creates a cart pole environment using defaults from the paper.
-    pub fn new() -> Self {
-        let (mut rand_random, _) = rand_random(None);
-
-        let gravity = OrderedFloat(9.8);
-        let masscart = OrderedFloat(1.0);
-        let masspole = OrderedFloat(0.1);
-        let length = OrderedFloat(0.5);
-        let force_mag = OrderedFloat(10.0);
-        let tau = OrderedFloat(0.02);
-        let kinematics_integrator = KinematicsIntegrator::Euler;
-
-        let theta_threshold_radians = OrderedFloat(12. * 2. * PI / 360.);
-        let x_threshold = OrderedFloat(2.4);
-
-        let high = CartPoleObservation::new(
-            x_threshold * 2.,
-            OrderedFloat(f64::INFINITY),
-            theta_threshold_radians * 2.,
-            OrderedFloat(f64::INFINITY),
-        );
-
-        let action_space = Discrete(2);
-        let observation_space = BoxR::new(-high, high);
-
-        let metadata = Metadata::default();
-
-        let state = CartPoleObservation::sample_between(&mut rand_random, None);
-
-        let steps_beyond_terminated = None;
-
-        Self {
-            gravity,
-            masscart,
-            masspole,
-            length,
-            force_mag,
-            tau,
-            kinematics_integrator,
-            theta_threshold_radians,
-            x_threshold,
-            action_space,
-            observation_space,
-            state,
-            metadata,
-            rand_random,
-            steps_beyond_terminated,
-        }
-    }
-
     fn total_mass(&self) -> O64 {
         self.masspole + self.masscart
     }
@@ -273,6 +215,56 @@ impl Env for CartPoleEnv {
 
     type ResetInfo = ();
 
+    /// Creates a cart pole environment using defaults from the paper.
+    fn new() -> Self {
+        let (mut rand_random, _) = rand_random(None);
+
+        let gravity = OrderedFloat(9.8);
+        let masscart = OrderedFloat(1.0);
+        let masspole = OrderedFloat(0.1);
+        let length = OrderedFloat(0.5);
+        let force_mag = OrderedFloat(10.0);
+        let tau = OrderedFloat(0.02);
+        let kinematics_integrator = KinematicsIntegrator::Euler;
+
+        let theta_threshold_radians = OrderedFloat(12. * 2. * PI / 360.);
+        let x_threshold = OrderedFloat(2.4);
+
+        let high = CartPoleObservation::new(
+            x_threshold * 2.,
+            OrderedFloat(f64::INFINITY),
+            theta_threshold_radians * 2.,
+            OrderedFloat(f64::INFINITY),
+        );
+
+        let action_space = Discrete(2);
+        let observation_space = BoxR::new(-high, high);
+
+        let metadata = Metadata::default();
+
+        let state = CartPoleObservation::sample_between(&mut rand_random, None);
+
+        let steps_beyond_terminated = None;
+
+        Self {
+            gravity,
+            masscart,
+            masspole,
+            length,
+            force_mag,
+            tau,
+            kinematics_integrator,
+            theta_threshold_radians,
+            x_threshold,
+            action_space,
+            observation_space,
+            state,
+            metadata,
+            rand_random,
+            steps_beyond_terminated,
+        }
+    }
+
     fn step(
         &mut self,
         action: Self::Action,
@@ -341,10 +333,10 @@ impl Env for CartPoleEnv {
             OrderedFloat(0.)
         };
 
-        let metadata = &self.metadata;
-        let x_threshold = self.x_threshold;
-        let length = self.length;
-        let state = self.state;
+        let _metadata = &self.metadata;
+        let _x_threshold = self.x_threshold;
+        let _length = self.length;
+        let _state = self.state;
 
         ActionReward {
             observation: self.state,
@@ -366,10 +358,10 @@ impl Env for CartPoleEnv {
 
         self.state = CartPoleObservation::sample_between(&mut self.rand_random, options);
 
-        let metadata = &self.metadata;
-        let x_threshold = self.x_threshold;
-        let length = self.length;
-        let state = self.state;
+        let _metadata = &self.metadata;
+        let _x_threshold = self.x_threshold;
+        let _length = self.length;
+        let _state = self.state;
 
         self.steps_beyond_terminated = None;
 

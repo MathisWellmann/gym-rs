@@ -32,6 +32,9 @@ where
     /// The type of the object produced when an environment is reset.
     type ResetInfo;
 
+    /// Generate an instance.
+    fn new() -> Self;
+
     /// Acts on an environment using the given action, producing a reward.
     fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
 
