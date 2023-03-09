@@ -18,7 +18,7 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 /// Defines a common set of operations available to different environments.
 pub trait Env: Clone + Debug + Serialize + EnvProperties
 where
-    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy,
+    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send,
 {
     /// The type of the observation produced after an action has been applied.
     type Observation;
