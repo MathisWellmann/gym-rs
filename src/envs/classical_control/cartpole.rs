@@ -207,8 +207,6 @@ pub enum KinematicsIntegrator {
 }
 
 impl Env for CartPoleEnv {
-    type Action = usize;
-
     type Observation = CartPoleObservation;
 
     type Info = ();
@@ -267,7 +265,7 @@ impl Env for CartPoleEnv {
 
     fn step(
         &mut self,
-        action: Self::Action,
+        action: usize,
     ) -> crate::core::ActionReward<Self::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),

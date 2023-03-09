@@ -169,24 +169,14 @@ impl From<MountainCarObservation> for Vec<f64> {
     }
 }
 
-impl MountainCarEnv {
-    fn height(xs: &Vec<O64>) -> Vec<O64> {
-        xs.clone()
-            .iter()
-            .map(|value| OrderedFloat((3. * value.into_inner()).sin() * 0.45 + 0.55))
-            .collect()
-    }
-}
-
 impl Env for MountainCarEnv {
-    type Action = usize;
     type Observation = MountainCarObservation;
     type Info = ();
     type ResetInfo = ();
 
     fn step(
         &mut self,
-        action: Self::Action,
+        action: usize,
     ) -> ActionReward<<Self as Env>::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),

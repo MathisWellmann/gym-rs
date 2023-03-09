@@ -19,11 +19,7 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 pub trait Env: Clone + Debug + Serialize + EnvProperties
 where
     Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy,
-    Self::Action: From<usize>
 {
-    /// The type of action supported.
-    type Action;
-
     /// The type of the observation produced after an action has been applied.
     type Observation;
 
@@ -37,7 +33,7 @@ where
     fn new() -> Self;
 
     /// Acts on an environment using the given action, producing a reward.
-    fn step(&mut self, action: Self::Action) -> ActionReward<Self::Observation, Self::Info>;
+    fn step(&mut self, action: usize) -> ActionReward<Self::Observation, Self::Info>;
 
     /// Resets the environment to a initial random state.
     fn reset(
