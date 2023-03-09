@@ -1,7 +1,5 @@
-use core::fmt;
-use std::fmt::Debug;
-
 use ordered_float::OrderedFloat;
+use core::fmt;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
@@ -17,9 +15,9 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 });
 
 /// Defines a common set of operations available to different environments.
-pub trait Env: Clone + Debug + Serialize + EnvProperties
+pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties
 where
-    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send + fmt::Debug,
+    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send + fmt::Debug
 {
     /// The type of the observation produced after an action has been applied.
     type Observation;
