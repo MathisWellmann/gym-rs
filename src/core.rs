@@ -19,6 +19,7 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 pub trait Env: Clone + Debug + Serialize + EnvProperties
 where
     Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy,
+    Self::Action: From<usize>
 {
     /// The type of action supported.
     type Action;
