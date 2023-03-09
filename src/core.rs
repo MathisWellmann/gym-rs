@@ -1,3 +1,4 @@
+use core::fmt;
 use std::fmt::Debug;
 
 use ordered_float::OrderedFloat;
@@ -18,7 +19,7 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 /// Defines a common set of operations available to different environments.
 pub trait Env: Clone + Debug + Serialize + EnvProperties
 where
-    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send,
+    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send + fmt::Debug,
 {
     /// The type of the observation produced after an action has been applied.
     type Observation;
@@ -42,6 +43,9 @@ where
         return_info: bool,
         options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>);
+
+    /// Set state.
+    fn set_state(&mut self, state: Self::Observation);
 
     /// Closes any open resources associated with the internal rendering service.
     fn close(&mut self);

@@ -371,6 +371,10 @@ impl Env for CartPoleEnv {
     }
 
     fn close(&mut self) {}
+
+    fn set_state(&mut self, state: Self::Observation) {
+        self.state = state
+    }
 }
 
 impl EnvProperties for CartPoleEnv {

@@ -274,6 +274,10 @@ impl Env for MountainCarEnv {
             metadata,
         }
     }
+
+    fn set_state(&mut self, state: Self::Observation) {
+        self.state = state;
+    }
 }
 
 impl EnvProperties for MountainCarEnv
