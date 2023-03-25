@@ -266,18 +266,6 @@ impl Env for MountainCarEnv {
             metadata,
         }
     }
-
-    fn set_state(&mut self, state: Self::Observation) {
-        self.state = state;
-    }
-
-    fn get_state_at(&self, idx: usize) -> f64 {
-        match idx {
-            0 => self.state.position,
-            1 => self.state.velocity,
-            _ => unreachable!("This should never happen."),
-        }
-    }
 }
 
 impl EnvProperties for MountainCarEnv
@@ -287,6 +275,22 @@ where
     type ActionSpace = Discrete;
     type ObservationSpace = spaces::BoxR<<Self as Env>::Observation>;
 
+    type State = MountainCarObservation;
+
+    fn set_state(&mut self, state: Self::State) {
+        self.state = state
+    }
+
+    fn get_state(&self) -> Self::State {
+        self.state
+    }
+    fn get_state_at(&self, idx: usize) -> f64 {
+        match idx {
+            0 => self.state.position,
+            1 => self.state.velocity,
+            _ => unreachable!("This should never happen."),
+        }
+    }
     fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
     }

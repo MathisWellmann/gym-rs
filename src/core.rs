@@ -41,12 +41,6 @@ where
         options: Option<BoxR<Self::Observation>>,
     ) -> (Self::Observation, Option<Self::ResetInfo>);
 
-    /// Set state.
-    fn set_state(&mut self, state: Self::Observation);
-
-    /// Get state
-    fn get_state_at(&self, idx: usize) -> f64;
-
     /// Closes any open resources associated with the internal rendering service.
     fn close(&mut self);
 }
@@ -60,6 +54,8 @@ where
     type ActionSpace;
     /// The type of observations produced
     type ObservationSpace;
+    /// The state value.
+    type State;
 
     /// Provides an object describing additional details about this environment.
     fn metadata(&self) -> &Metadata<Self>;
@@ -77,6 +73,15 @@ where
 
     /// Provides the object describing the states that can be observed in this environment.
     fn observation_space(&self) -> &Self::ObservationSpace;
+
+    /// Set state.
+    fn set_state(&mut self, state: Self::State);
+
+    /// Get state
+    fn get_state_at(&self, idx: usize) -> f64;
+
+    /// Get state
+    fn get_state(&self) -> Self::State;
 }
 
 /// Encapsulates and describes the state update experienced by an environment after acting on an

@@ -266,8 +266,7 @@ impl Env for CartPoleEnv {
         let temp =
             (force + self.polemass_length() * theta_dot.powf(2.) * sintheta) / self.total_mass();
         let thetaacc = (self.gravity * sintheta - costheta * temp)
-            / (self.length
-                * ((4.0 / 3.0) - self.masspole * costheta.powf(2.) / self.total_mass()));
+            / (self.length * ((4.0 / 3.0) - self.masspole * costheta.powf(2.) / self.total_mass()));
         let xacc = temp - self.polemass_length() * thetaacc * costheta / self.total_mass();
 
         if self.kinematics_integrator == KinematicsIntegrator::Euler {
@@ -345,9 +344,21 @@ impl Env for CartPoleEnv {
     }
 
     fn close(&mut self) {}
+}
 
-    fn set_state(&mut self, state: Self::Observation) {
+impl EnvProperties for CartPoleEnv {
+    type ActionSpace = Discrete;
+
+    type ObservationSpace = BoxR<CartPoleObservation>;
+
+    type State = CartPoleObservation;
+
+    fn set_state(&mut self, state: Self::State) {
         self.state = state
+    }
+
+    fn get_state(&self) -> Self::State {
+        self.state
     }
 
     fn get_state_at(&self, idx: usize) -> f64 {
@@ -359,12 +370,6 @@ impl Env for CartPoleEnv {
             _ => unreachable!("Wrong idx."),
         }
     }
-}
-
-impl EnvProperties for CartPoleEnv {
-    type ActionSpace = Discrete;
-
-    type ObservationSpace = BoxR<CartPoleObservation>;
 
     fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
