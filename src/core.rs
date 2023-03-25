@@ -40,6 +40,7 @@ pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties {
 pub trait EnvProperties
 where
     Self: Sized,
+    Self::Observation: Copy
 {
     /// The type of values that can be observed in the action space.
     type ActionSpace;
