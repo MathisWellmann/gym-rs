@@ -2,10 +2,7 @@ use core::fmt;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
-use crate::{
-    spaces::BoxR,
-    utils::custom::{structs::Metadata, traits::Sample},
-};
+use crate::{spaces::BoxR, utils::custom::structs::Metadata};
 
 /// Defines the range of values that can be outputted by a given environment.
 const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
@@ -14,13 +11,7 @@ const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
 });
 
 /// Defines a common set of operations available to different environments.
-pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties
-where
-    Self::Observation: Sample + Clone + Copy + Send + fmt::Debug,
-{
-    /// The type of the observation produced after an action has been applied.
-    type Observation;
-
+pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties {
     /// The type of the metadata object produced by acting on the environment.
     type Info;
 
@@ -55,7 +46,7 @@ where
     /// The type of observations produced
     type ObservationSpace;
     /// The state value.
-    type State;
+    type Observation;
 
     /// Provides an object describing additional details about this environment.
     fn metadata(&self) -> &Metadata<Self>;
@@ -75,13 +66,13 @@ where
     fn observation_space(&self) -> &Self::ObservationSpace;
 
     /// Set state.
-    fn set_observation(&mut self, state: Self::State);
+    fn set_observation(&mut self, state: Self::Observation);
 
     /// Get partial state.
     fn get_observation_property(&self, idx: usize) -> f64;
 
     /// Get full state.
-    fn get_observation(&self) -> Self::State;
+    fn get_observation(&self) -> Self::Observation;
 }
 
 /// Encapsulates and describes the state update experienced by an environment after acting on an

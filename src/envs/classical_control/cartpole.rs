@@ -185,8 +185,6 @@ pub enum KinematicsIntegrator {
 }
 
 impl Env for CartPoleEnv {
-    type Observation = CartPoleObservation;
-
     type Info = ();
 
     type ResetInfo = ();
@@ -351,13 +349,13 @@ impl EnvProperties for CartPoleEnv {
 
     type ObservationSpace = BoxR<CartPoleObservation>;
 
-    type State = CartPoleObservation;
+    type Observation = CartPoleObservation;
 
-    fn set_observation(&mut self, state: Self::State) {
+    fn set_observation(&mut self, state: Self::Observation) {
         self.state = state
     }
 
-    fn get_observation(&self) -> Self::State {
+    fn get_observation(&self) -> Self::Observation {
         self.state
     }
 

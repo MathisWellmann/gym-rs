@@ -166,11 +166,10 @@ impl From<MountainCarObservation> for Vec<f64> {
 }
 
 impl Env for MountainCarEnv {
-    type Observation = MountainCarObservation;
     type Info = ();
     type ResetInfo = ();
 
-    fn step(&mut self, action: usize) -> ActionReward<<Self as Env>::Observation, Self::Info> {
+    fn step(&mut self, action: usize) -> ActionReward<Self::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),
             "{} (usize) invalid",
@@ -273,17 +272,17 @@ where
     Self: Sized,
 {
     type ActionSpace = Discrete;
-    type ObservationSpace = spaces::BoxR<<Self as Env>::Observation>;
+    type ObservationSpace = spaces::BoxR<Self::Observation>;
+    type Observation = MountainCarObservation;
 
-    type State = MountainCarObservation;
-
-    fn set_observation(&mut self, state: Self::State) {
+    fn set_observation(&mut self, state: Self::Observation) {
         self.state = state
     }
 
-    fn get_observation(&self) -> Self::State {
+    fn get_observation(&self) -> Self::Observation {
         self.state
     }
+
     fn get_observation_property(&self, idx: usize) -> f64 {
         match idx {
             0 => self.state.position,
@@ -291,6 +290,7 @@ where
             _ => unreachable!("This should never happen."),
         }
     }
+
     fn metadata(&self) -> &Metadata<Self> {
         &self.metadata
     }
