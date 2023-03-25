@@ -77,10 +77,10 @@ where
     /// Set state.
     fn set_state(&mut self, state: Self::State);
 
-    /// Get state
+    /// Get partial state.
     fn get_state_at(&self, idx: usize) -> f64;
 
-    /// Get state
+    /// Get full state.
     fn get_state(&self) -> Self::State;
 }
 
