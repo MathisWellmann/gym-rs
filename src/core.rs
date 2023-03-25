@@ -1,23 +1,22 @@
-use ordered_float::OrderedFloat;
 use core::fmt;
 use rand_pcg::Pcg64;
 use serde::Serialize;
 
 use crate::{
     spaces::BoxR,
-    utils::custom::{structs::Metadata, traits::Sample, types::O64},
+    utils::custom::{structs::Metadata, traits::Sample},
 };
 
 /// Defines the range of values that can be outputted by a given environment.
 const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
-    lower_bound: OrderedFloat(f64::NEG_INFINITY),
-    upper_bound: OrderedFloat(f64::INFINITY),
+    lower_bound: f64::NEG_INFINITY,
+    upper_bound: f64::INFINITY,
 });
 
 /// Defines a common set of operations available to different environments.
 pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties
 where
-    Self::Observation: Sample + Into<Vec<f64>> + Clone + Copy + Send + fmt::Debug
+    Self::Observation: Sample + Clone + Copy + Send + fmt::Debug,
 {
     /// The type of the observation produced after an action has been applied.
     type Observation;
@@ -44,6 +43,9 @@ where
 
     /// Set state.
     fn set_state(&mut self, state: Self::Observation);
+
+    /// Get state
+    fn get_state_at(&self, idx: usize) -> f64;
 
     /// Closes any open resources associated with the internal rendering service.
     fn close(&mut self);
@@ -79,12 +81,12 @@ where
 
 /// Encapsulates and describes the state update experienced by an environment after acting on an
 /// action.
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Copy, PartialEq, PartialOrd)]
 pub struct ActionReward<T, E> {
     /// The current observable state.
     pub observation: T,
     /// The value of the reward produced.
-    pub reward: O64,
+    pub reward: f64,
     /// Indicates whether the episode has terminated or not.
     pub done: bool,
     /// Indicates whether the episode has termianted early or  not.
@@ -94,12 +96,12 @@ pub struct ActionReward<T, E> {
 }
 
 /// Defines the bounds for the reward value that can be observed.
-#[derive(Clone, Debug, Serialize, PartialEq, Ord, PartialOrd, Eq)]
+#[derive(Clone, Debug, Serialize, PartialEq, PartialOrd)]
 pub struct RewardRange {
     /// The smallest possible reward that can be observed.
-    lower_bound: O64,
+    lower_bound: f64,
     /// The largest possible reward that can be observed.
-    upper_bound: O64,
+    upper_bound: f64,
 }
 
 /// Implement a default reward range.

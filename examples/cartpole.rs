@@ -1,6 +1,5 @@
 use gym_rs::{core::Env, envs::classical_control::cartpole::CartPoleEnv};
 use log::debug;
-use ordered_float::OrderedFloat;
 use rand::{thread_rng, Rng};
 
 fn main() {
@@ -12,7 +11,7 @@ fn main() {
     let mut rewards = vec![];
 
     for _ in 0..15 {
-        let mut current_reward = OrderedFloat(0.);
+        let mut current_reward = 0.;
 
         for _ in 0..500 {
             let action = (&mut thread_rng()).gen_range(0..=1);

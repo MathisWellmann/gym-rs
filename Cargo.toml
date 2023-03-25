@@ -23,9 +23,4 @@ cosyne = { version = "0.3.2", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 derivative = { version = "2.2" }
 nalgebra = "0.31"
-ordered-float = { git = "https://github.com/urmzd/rust-ordered-float.git", features = [
-  "serde",
-  "rand",
-  "std",
-] }
 num-traits = "0.2"

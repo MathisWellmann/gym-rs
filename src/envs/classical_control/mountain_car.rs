@@ -1,6 +1,4 @@
-use num_traits::Float;
-use ordered_float::impl_rand::UniformOrdered;
-use rand::distributions::uniform::{SampleUniform, UniformSampler};
+use rand::distributions::uniform::{SampleUniform, UniformFloat, UniformSampler};
 use rand::distributions::Uniform;
 use rand::prelude::Distribution;
 use rand::Rng;
@@ -11,13 +9,11 @@ use crate::spaces::{self, BoxR, Discrete, Space};
 
 use crate::utils::custom::structs::Metadata;
 use crate::utils::custom::traits::Sample;
-use crate::utils::custom::types::O64;
 use crate::utils::custom::util_fns::clip;
 use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
 
-use ordered_float::OrderedFloat;
 use rand_pcg::Pcg64;
 
 use serde::Serialize;
@@ -35,20 +31,20 @@ use serde::Serialize;
 #[derivative(Debug)]
 pub struct MountainCarEnv {
     /// The minimum position the car can be spawned at.
-    pub min_position: O64,
+    pub min_position: f64,
     /// The maximum position the cart can be spawned at.
-    pub max_position: O64,
+    pub max_position: f64,
     /// The max speed the car can reach.
-    pub max_speed: O64,
+    pub max_speed: f64,
     /// The position on the map, where when passed, an episode can be considered terminated.
-    pub goal_position: O64,
+    pub goal_position: f64,
     /// The velocity at which an episode can be considered terminated.
-    pub goal_velocity: O64,
+    pub goal_velocity: f64,
 
     /// The force of the cart.
-    pub force: O64,
+    pub force: f64,
     /// The gravity constant applied to the environment.
-    pub gravity: O64,
+    pub gravity: f64,
 
     /// The set of actions which can be taken.
     pub action_space: spaces::Discrete,
@@ -92,18 +88,18 @@ impl Default for Metadata<MountainCarEnv> {
 }
 
 /// Utility structure intended to reduce confusion around meaning of properties.
-#[derive(Debug, new, Copy, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, new, Copy, Clone, Serialize, PartialEq, PartialOrd)]
 pub struct MountainCarObservation {
     /// The position the car exists on the mountain.
-    pub position: O64,
+    pub position: f64,
     /// The velocity the car is travelling at.
-    pub velocity: O64,
+    pub velocity: f64,
 }
 
 /// The structure responsible for uniformly sampling a mountain car observation.
 pub struct UniformMountainCarObservation {
     /// The sampler responsible for deriving a position.
-    pub position_sampler: UniformOrdered<f64>,
+    pub position_sampler: UniformFloat<f64>,
 }
 
 impl UniformSampler for UniformMountainCarObservation {
@@ -115,7 +111,7 @@ impl UniformSampler for UniformMountainCarObservation {
         B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
     {
         UniformMountainCarObservation {
-            position_sampler: UniformOrdered::new(low.borrow().position, high.borrow().position),
+            position_sampler: UniformFloat::new(low.borrow().position, high.borrow().position),
         }
     }
 
@@ -125,7 +121,7 @@ impl UniformSampler for UniformMountainCarObservation {
         B2: rand::distributions::uniform::SampleBorrow<Self::X> + Sized,
     {
         UniformMountainCarObservation {
-            position_sampler: UniformOrdered::new_inclusive(
+            position_sampler: UniformFloat::new_inclusive(
                 low.borrow().position,
                 high.borrow().position,
             ),
@@ -135,7 +131,7 @@ impl UniformSampler for UniformMountainCarObservation {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
         MountainCarObservation {
             position: self.position_sampler.sample(rng),
-            velocity: OrderedFloat(0.),
+            velocity: (0.),
         }
     }
 }
@@ -149,12 +145,12 @@ impl Sample for MountainCarObservation {
         let BoxR { low, high } = bounds.unwrap_or({
             BoxR::new(
                 MountainCarObservation {
-                    position: OrderedFloat(-0.6),
-                    velocity: OrderedFloat(0.),
+                    position: (-0.6),
+                    velocity: (0.),
                 },
                 MountainCarObservation {
-                    position: OrderedFloat(-0.4),
-                    velocity: OrderedFloat(0.),
+                    position: (-0.4),
+                    velocity: (0.),
                 },
             )
         });
@@ -165,7 +161,7 @@ impl Sample for MountainCarObservation {
 
 impl From<MountainCarObservation> for Vec<f64> {
     fn from(o: MountainCarObservation) -> Self {
-        vec![o.position.into_inner(), o.velocity.into_inner()]
+        vec![o.position, o.velocity]
     }
 }
 
@@ -174,10 +170,7 @@ impl Env for MountainCarEnv {
     type Info = ();
     type ResetInfo = ();
 
-    fn step(
-        &mut self,
-        action: usize,
-    ) -> ActionReward<<Self as Env>::Observation, Self::Info> {
+    fn step(&mut self, action: usize) -> ActionReward<<Self as Env>::Observation, Self::Info> {
         assert!(
             self.action_space.contains(action),
             "{} (usize) invalid",
@@ -187,19 +180,18 @@ impl Env for MountainCarEnv {
         let mut position = self.state.position;
         let mut velocity = self.state.velocity;
 
-        velocity += OrderedFloat((action as f64) - 1.) * self.force
-            + (OrderedFloat(3.) * position).cos() * (-self.gravity);
+        velocity += ((action as f64) - 1.) * self.force + ((3.) * position).cos() * (-self.gravity);
         velocity = clip(velocity, -self.max_speed, self.max_speed);
 
         position += velocity;
         position = clip(position, self.min_position, self.max_position);
 
-        if position == self.min_position && velocity < OrderedFloat(0.) {
-            velocity = OrderedFloat(0.);
+        if position == self.min_position && velocity < (0.) {
+            velocity = 0.;
         }
 
         let done: bool = position >= self.goal_position && velocity >= self.goal_velocity;
-        let reward: O64 = OrderedFloat(-1.0);
+        let reward = -1.0;
 
         self.state = MountainCarObservation { position, velocity };
 
@@ -236,14 +228,14 @@ impl Env for MountainCarEnv {
     fn new() -> Self {
         let (mut rng, _) = rand_random(None);
 
-        let min_position = OrderedFloat(-1.2);
-        let max_position = OrderedFloat(0.6);
-        let max_speed = OrderedFloat(0.07);
-        let goal_position = OrderedFloat(0.5);
-        let goal_velocity = OrderedFloat(0.);
+        let min_position = -1.2;
+        let max_position = 0.6;
+        let max_speed = 0.07;
+        let goal_position = 0.5;
+        let goal_velocity = 0.;
 
-        let force = OrderedFloat(0.001);
-        let gravity = OrderedFloat(0.0025);
+        let force = 0.001;
+        let gravity = 0.0025;
 
         let low = MountainCarObservation::new(min_position, -max_speed);
         let high = MountainCarObservation::new(max_position, max_speed);
@@ -277,6 +269,14 @@ impl Env for MountainCarEnv {
 
     fn set_state(&mut self, state: Self::Observation) {
         self.state = state;
+    }
+
+    fn get_state_at(&self, idx: usize) -> f64 {
+        match idx {
+            0 => self.state.position,
+            1 => self.state.velocity,
+            _ => unreachable!("This should never happen."),
+        }
     }
 }
 
