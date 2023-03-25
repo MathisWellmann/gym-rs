@@ -353,15 +353,15 @@ impl EnvProperties for CartPoleEnv {
 
     type State = CartPoleObservation;
 
-    fn set_state(&mut self, state: Self::State) {
+    fn set_observation(&mut self, state: Self::State) {
         self.state = state
     }
 
-    fn get_state(&self) -> Self::State {
+    fn get_observation(&self) -> Self::State {
         self.state
     }
 
-    fn get_state_at(&self, idx: usize) -> f64 {
+    fn get_observation_property(&self, idx: usize) -> f64 {
         match idx {
             0 => self.state.x,
             1 => self.state.x_dot,

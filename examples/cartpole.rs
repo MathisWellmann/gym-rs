@@ -1,4 +1,4 @@
-use gym_rs::{core::Env, envs::classical_control::cartpole::CartPoleEnv};
+use gym_rs::{core::{Env, EnvProperties}, envs::classical_control::cartpole::CartPoleEnv};
 use log::debug;
 use rand::{thread_rng, Rng};
 

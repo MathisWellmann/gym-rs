@@ -75,13 +75,13 @@ where
     fn observation_space(&self) -> &Self::ObservationSpace;
 
     /// Set state.
-    fn set_state(&mut self, state: Self::State);
+    fn set_observation(&mut self, state: Self::State);
 
     /// Get partial state.
-    fn get_state_at(&self, idx: usize) -> f64;
+    fn get_observation_property(&self, idx: usize) -> f64;
 
     /// Get full state.
-    fn get_state(&self) -> Self::State;
+    fn get_observation(&self) -> Self::State;
 }
 
 /// Encapsulates and describes the state update experienced by an environment after acting on an
