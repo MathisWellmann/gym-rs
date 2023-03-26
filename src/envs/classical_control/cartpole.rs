@@ -13,7 +13,7 @@ use rand::{
 };
 
 use rand_pcg::Pcg64;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 use crate::{
     core::{ActionReward, Env, EnvProperties},
@@ -143,12 +143,18 @@ impl UniformSampler for UniformCartPoleObservation {
 }
 
 /// Defines the state found in the cart pole environment.
-#[derive(new, Debug, Clone, Copy, Serialize, PartialEq)]
+#[derive(new, Debug, Clone, Copy, Serialize, PartialEq, Deserialize)]
 pub struct CartPoleObservation {
     x: f64,
     x_dot: f64,
     theta: f64,
     theta_dot: f64,
+}
+
+impl From<CartPoleObservation> for Vec<f64> {
+    fn from(value: CartPoleObservation) -> Self {
+        vec![value.x, value.x_dot, value.theta, value.theta_dot]
+    }
 }
 
 impl Sample for CartPoleObservation {

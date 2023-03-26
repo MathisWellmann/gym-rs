@@ -1,6 +1,6 @@
 use core::fmt;
 use rand_pcg::Pcg64;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{spaces::BoxR, utils::custom::structs::Metadata};
 
@@ -40,7 +40,7 @@ pub trait Env: Clone + fmt::Debug + Serialize + EnvProperties {
 pub trait EnvProperties
 where
     Self: Sized,
-    Self::Observation: Copy
+    Self::Observation: Copy + Serialize + DeserializeOwned + Into<Vec<f64>>
 {
     /// The type of values that can be observed in the action space.
     type ActionSpace;

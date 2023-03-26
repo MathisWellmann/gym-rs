@@ -16,7 +16,7 @@ use derive_new::new;
 
 use rand_pcg::Pcg64;
 
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 /// An implementation of the classical reinforcment learning environment, mountain car.
 ///
@@ -88,13 +88,14 @@ impl Default for Metadata<MountainCarEnv> {
 }
 
 /// Utility structure intended to reduce confusion around meaning of properties.
-#[derive(Debug, new, Copy, Clone, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, new, Copy, Clone, Serialize, PartialEq, PartialOrd, Deserialize)]
 pub struct MountainCarObservation {
     /// The position the car exists on the mountain.
     pub position: f64,
     /// The velocity the car is travelling at.
     pub velocity: f64,
 }
+
 
 /// The structure responsible for uniformly sampling a mountain car observation.
 pub struct UniformMountainCarObservation {
