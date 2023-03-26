@@ -49,6 +49,9 @@ where
     /// The state value.
     type Observation;
 
+    /// The length of an episode.
+    fn episode_length() -> usize;
+
     /// Provides an object describing additional details about this environment.
     fn metadata(&self) -> &Metadata<Self>;
 

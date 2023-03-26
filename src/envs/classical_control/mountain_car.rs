@@ -307,4 +307,8 @@ where
     fn observation_space(&self) -> &Self::ObservationSpace {
         &self.observation_space
     }
+
+    fn episode_length() -> usize {
+        200
+    }
 }
