@@ -311,4 +311,6 @@ where
     fn episode_length() -> usize {
         200
     }
+
+    const DEFAULT_SCORE: f64 = 200.;
 }

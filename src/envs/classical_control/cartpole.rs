@@ -392,6 +392,8 @@ impl EnvProperties for CartPoleEnv {
     }
 
     fn episode_length() -> usize {
-        500
+        Self::DEFAULT_SCORE as usize
     }
+
+    const DEFAULT_SCORE: f64 = 500.;
 }

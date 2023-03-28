@@ -49,6 +49,9 @@ where
     /// The state value.
     type Observation;
 
+    /// The default score when episode terminates due to expected errors.
+    const DEFAULT_SCORE: f64;
+
     /// The length of an episode.
     fn episode_length() -> usize;
 
