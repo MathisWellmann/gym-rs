@@ -1,14 +1,9 @@
-use log::warn;
-use nalgebra as na;
-use ordered_float::{impl_rand::UniformOrdered, Float};
-use sdl2::{
-    gfx::primitives::DrawRenderer,
-    pixels::{self, Color},
-};
 use std::{f64::consts::PI, ops::Neg};
 
 use derive_new::new;
-use ordered_float::OrderedFloat;
+use log::warn;
+use nalgebra as na;
+use ordered_float::{impl_rand::UniformOrdered, Float, OrderedFloat};
 use rand::{
     distributions::{
         uniform::{SampleUniform, UniformSampler},
@@ -17,8 +12,11 @@ use rand::{
     prelude::Distribution,
     Rng,
 };
-
 use rand_pcg::Pcg64;
+use sdl2::{
+    gfx::primitives::DrawRenderer,
+    pixels::{self, Color},
+};
 use serde::Serialize;
 
 use crate::{

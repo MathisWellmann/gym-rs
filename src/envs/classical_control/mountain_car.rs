@@ -1,31 +1,38 @@
-use num_traits::Float;
-use ordered_float::impl_rand::UniformOrdered;
-use rand::distributions::uniform::{SampleUniform, UniformSampler};
-use rand::distributions::Uniform;
-use rand::prelude::Distribution;
-use rand::Rng;
-use sdl2::gfx::primitives::DrawRenderer;
-use std::fmt::Debug;
-use std::iter::zip;
+use std::{fmt::Debug, iter::zip};
 
-use crate::core::{ActionReward, Env, EnvProperties};
-use crate::spaces::{self, BoxR, Discrete, Space};
-use crate::utils::custom::screen::{Screen, ScreenGuiTransformations};
-use crate::utils::custom::structs::Metadata;
-use crate::utils::custom::traits::Sample;
-use crate::utils::custom::types::O64;
-use crate::utils::custom::util_fns::clip;
-use crate::utils::renderer::{RenderMode, Renderer, Renders};
-use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
 use na::{Point2, Rotation2};
 use nalgebra as na;
-use ordered_float::OrderedFloat;
+use num_traits::Float;
+use ordered_float::{impl_rand::UniformOrdered, OrderedFloat};
+use rand::{
+    distributions::{
+        uniform::{SampleUniform, UniformSampler},
+        Uniform,
+    },
+    prelude::Distribution,
+    Rng,
+};
 use rand_pcg::Pcg64;
-use sdl2::pixels::Color;
-use sdl2::rect::Point;
+use sdl2::{gfx::primitives::DrawRenderer, pixels::Color, rect::Point};
 use serde::Serialize;
+
+use crate::{
+    core::{ActionReward, Env, EnvProperties},
+    spaces::{self, BoxR, Discrete, Space},
+    utils::{
+        custom::{
+            screen::{Screen, ScreenGuiTransformations},
+            structs::Metadata,
+            traits::Sample,
+            types::O64,
+            util_fns::clip,
+        },
+        renderer::{RenderMode, Renderer, Renders},
+        seeding::rand_random,
+    },
+};
 
 /// An implementation of the classical reinforcment learning environment, mountain car.
 ///
