@@ -6,8 +6,6 @@ use ordered_float::OrderedFloat;
 use rand::{thread_rng, Rng};
 
 fn main() {
-    pretty_env_logger::try_init().unwrap_or(());
-
     let mut env = CartPoleEnv::new(RenderMode::Human);
     env.reset(None, false, None);
 
@@ -30,5 +28,5 @@ fn main() {
         rewards.push(current_reward);
     }
 
-    debug!("{:?}", rewards)
+    println!("{:?}", rewards);
 }

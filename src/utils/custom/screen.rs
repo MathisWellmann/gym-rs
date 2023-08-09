@@ -68,7 +68,7 @@ impl Clone for Screen {
         Self {
             height: self.height.clone(),
             width: self.width.clone(),
-            title: self.title.clone(),
+            title: self.title,
             render_fps: self.render_fps.clone(),
             mode: self.mode.clone(),
             gui: None,
