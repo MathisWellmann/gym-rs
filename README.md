@@ -1,6 +1,6 @@
 # OpenAI Gym (Unofficial Rust Implementation)
 
-This library aims be be as close to the original OpenAI Gym library written in Python.
+This library aims be be close to the original OpenAI Gym library written in Python.
 
 If you don't mind Python and would like to use the original implementation from Rust,
 check out a [OpenAI Gym wrapper](https://github.com/MrRobb/gym-rs).
@@ -15,6 +15,30 @@ dependency if any form of rendering is to be done.
 - [SDL2](https://wiki.libsdl.org/Installation)
 - [SDL2_gfx](https://www.ferzkopp.net/Software/SDL2_gfx/Docs/html/index.html)
 
+On Ubuntu you can install the dependency as such:
+```shell
+sudo apt-get install libsdl2-dev
+```
+
+On Arch:
+```shell
+sudo pacman -S sdl2
+```
+
+If your using nix, you can get into the reproducible build environment as simple as:
+```shell
+nix-shell
+```
+
+## Usage
+
+To use this crate in your project, put this in your Cargo.toml:
+
+```toml
+[dependencies]
+gym_rs = "0.3.0"
+```
+
 ## Examples
 
 ```bash
@@ -27,18 +51,10 @@ cargo run --example=mountain_car
 ```
 ![mountain_car](assets/mountain_car.png)
 
-## Usage
-
-To use this crate in your project, put this in your Cargo.toml:
-
-```toml
-[dependencies]
-gym_rs = "1.0.0"
-```
 
 ## Contributions
 
-Contributions are welcomed. For the contribution guidelines, please take a look at [CONTRIBUTING.md](./CONTRIBUTING.md).
+Contributions are welcome. For the contribution guidelines, please take a look at [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Donations
 
