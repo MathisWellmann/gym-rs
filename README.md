@@ -22,7 +22,7 @@ sudo apt-get install libsdl2-dev
 
 On Arch:
 ```shell
-sudo pacman -S sdl2
+sudo pacman -S sdl2 sdl2_gfx
 ```
 
 If your using nix, you can get into the reproducible build environment as simple as:
