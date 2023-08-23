@@ -1,7 +1,6 @@
 use gym_rs::{
     core::Env, envs::classical_control::cartpole::CartPoleEnv, utils::renderer::RenderMode,
 };
-use log::debug;
 use ordered_float::OrderedFloat;
 use rand::{thread_rng, Rng};
 
