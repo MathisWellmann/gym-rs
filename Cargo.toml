@@ -21,9 +21,5 @@ sdl2 = { version = "0.35", features = ["bundled", "gfx"] }
 serde = { version = "1.0", features = ["derive"] }
 derivative = { version = "2.2" }
 nalgebra = "0.32"
-ordered-float = { git = "https://github.com/urmzd/rust-ordered-float.git", features = [
-  "serde",
-  "rand",
-  "std",
-] }
+ordered-float = { version = ">=3.9.1", features = ["serde", "rand"] }
 num-traits = "0.2"

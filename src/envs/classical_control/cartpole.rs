@@ -3,7 +3,7 @@ use std::{f64::consts::PI, ops::Neg};
 use derive_new::new;
 use log::warn;
 use nalgebra as na;
-use ordered_float::{impl_rand::UniformOrdered, Float, OrderedFloat};
+use ordered_float::{Float, OrderedFloat, UniformOrdered};
 use rand::{
     distributions::{
         uniform::{SampleUniform, UniformSampler},

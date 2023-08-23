@@ -5,7 +5,7 @@ use derive_new::new;
 use na::{Point2, Rotation2};
 use nalgebra as na;
 use num_traits::Float;
-use ordered_float::{impl_rand::UniformOrdered, OrderedFloat};
+use ordered_float::{OrderedFloat, UniformOrdered};
 use rand::{
     distributions::{
         uniform::{SampleUniform, UniformSampler},
