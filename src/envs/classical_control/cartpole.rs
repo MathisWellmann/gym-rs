@@ -351,10 +351,10 @@ impl Sample for CartPoleObservation {
     fn sample_between<R: Rng>(rng: &mut R, bounds: Option<BoxR<Self>>) -> Self {
         let BoxR { low, high } = bounds.unwrap_or({
             let observation_bound = CartPoleObservation::new(
-                OrderedFloat(0.5),
-                OrderedFloat(0.5),
-                OrderedFloat(0.5),
-                OrderedFloat(0.5),
+                OrderedFloat(0.05),
+                OrderedFloat(0.05),
+                OrderedFloat(0.05),
+                OrderedFloat(0.05),
             );
             BoxR::new(-observation_bound, observation_bound)
         });
