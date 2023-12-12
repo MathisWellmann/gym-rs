@@ -39,6 +39,31 @@ To use this crate in your project, put this in your Cargo.toml:
 gym_rs = "0.3.0"
 ```
 
+## Usage on Windows:
+As per [#6](https://github.com/MathisWellmann/gym-rs/issues/6), here are some instructions for the windows folks:
+
+0. clone the repo & cd to the root dir of the repo
+1. modify Cargo.toml, remove dependency sdl2 line and add following code:
+
+```
+[dependencies.sdl2]
+version = "0.35.2"
+default-features = false
+features = ["static-link", "use-vcpkg", "gfx"]
+
+[package.metadata.vcpkg]
+dependencies = ["sdl2", "sdl2-gfx"]
+git = "https://github.com/microsoft/vcpkg"
+rev = "16ee2ec"
+
+[package.metadata.vcpkg.target]
+x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
+
+```
+2. install cargo-vcpkg using cargo install cargo-vcpkg
+3. under the root dir of the repo, cargo vcpkg build
+4. now build and run, such as cargo run --example=mountain_car
+
 ## Examples
 
 ```bash
