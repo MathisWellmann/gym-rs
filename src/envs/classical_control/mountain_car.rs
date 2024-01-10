@@ -1,22 +1,38 @@
-use rand::distributions::uniform::{SampleUniform, UniformFloat, UniformSampler};
-use rand::distributions::Uniform;
-use rand::prelude::Distribution;
-use rand::Rng;
-use std::fmt::Debug;
+use std::{fmt::Debug, iter::zip};
 
-use crate::core::{ActionReward, Env, EnvProperties};
-use crate::spaces::{self, BoxR, Discrete, Space};
-
-use crate::utils::custom::structs::Metadata;
-use crate::utils::custom::traits::Sample;
-use crate::utils::custom::util_fns::clip;
-use crate::utils::seeding::rand_random;
 use derivative::Derivative;
 use derive_new::new;
-
+use na::{Point2, Rotation2};
+use nalgebra as na;
+use num_traits::Float;
+use ordered_float::{OrderedFloat, UniformOrdered};
+use rand::{
+    distributions::{
+        uniform::{SampleUniform, UniformSampler},
+        Uniform,
+    },
+    prelude::Distribution,
+    Rng,
+};
 use rand_pcg::Pcg64;
+use sdl2::{gfx::primitives::DrawRenderer, pixels::Color, rect::Point};
+use serde::Serialize;
 
-use serde::{Serialize, Deserialize};
+use crate::{
+    core::{ActionReward, Env, EnvProperties},
+    spaces::{self, BoxR, Discrete, Space},
+    utils::{
+        custom::{
+            screen::{Screen, ScreenGuiTransformations},
+            structs::Metadata,
+            traits::Sample,
+            types::O64,
+            util_fns::clip,
+        },
+        renderer::{RenderMode, Renderer, Renders},
+        seeding::rand_random,
+    },
+};
 
 /// An implementation of the classical reinforcment learning environment, mountain car.
 ///

@@ -21,9 +21,8 @@ impl Space<usize> for Discrete {
 
 #[cfg(test)]
 mod tests {
-    use crate::spaces::Space;
-
     use super::Discrete;
+    use crate::spaces::Space;
 
     #[test]
     fn given_value_greater_or_eq_than_upper_bound_when_contains_called_then_returns_false() {

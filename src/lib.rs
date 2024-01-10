@@ -1,5 +1,5 @@
 //! A rust implementation of OpenAI's reinforcment library Gym.
-#![deny(missing_docs)]
+#![deny(missing_docs, unused_imports, unused_crate_dependencies)]
 
 /// Contains user-facing interfaces.
 pub mod core;

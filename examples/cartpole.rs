@@ -1,11 +1,13 @@
-use gym_rs::{core::Env, envs::classical_control::cartpole::CartPoleEnv};
-use log::debug;
+use gym_rs::{
+    core::Env, envs::classical_control::cartpole::CartPoleEnv, utils::renderer::RenderMode,
+};
+use ordered_float::OrderedFloat;
 use rand::{thread_rng, Rng};
 
 fn main() {
     pretty_env_logger::try_init().unwrap_or(());
 
-    let mut env = CartPoleEnv::new();
+    let mut env = CartPoleEnv::new(RenderMode::Human);
     env.reset(None, false, None);
 
     let mut rewards = vec![];
@@ -27,5 +29,5 @@ fn main() {
         rewards.push(current_reward);
     }
 
-    debug!("{:?}", rewards)
+    println!("{:?}", rewards);
 }
