@@ -1,3 +1,5 @@
+/// Holds the objects associating with rendering.
+pub mod screen;
 /// Holds structures commonly used.
 pub mod structs;
 /// Holds traits shared among different environment structures.
