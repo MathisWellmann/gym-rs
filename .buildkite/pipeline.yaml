@@ -1,0 +1,25 @@
+steps:
+  - label: ":nixos: :rust: :buildkite: check"
+    command: RUSTFLAGS="-D warnings" nix develop --command bash -c "cargo check"
+    agents: 
+      queue: nixos
+
+  - label: ":nixos: :rust: :buildkite: clippy"
+    command: RUSTFLAGS="-D warnings" nix develop --command bash -c "cargo clippy"
+    agents: 
+      queue: nixos
+
+  - label: ":nixos: :rust: :buildkite: test"
+    command: RUSTFLAGS="-D warnings" nix develop --command bash -c "cargo test"
+    agents: 
+      queue: nixos
+
+  - label: ":nixos: :rust: :buildkite: fmt"
+    command: RUSTFLAGS="-D warnings" nix develop --command bash -c "cargo fmt --check"
+    agents: 
+      queue: nixos
+
+  - label: ":nixos: :rust: :buildkite: doc"
+    command: nix develop --command bash -c "cargo doc --no-deps --workspace"
+    agents: 
+      queue: nixos
