@@ -41,6 +41,7 @@
               cmake
               (lib.hiPrio rust-bin.nightly."2024-04-01".rustfmt)
               rust
+              SDL2_gfx # Used in tests
             ];
           };
         }
