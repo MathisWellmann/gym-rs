@@ -1,5 +1,5 @@
 {
-  description = "Flake for trade_aggregation-rs";
+  description = "Flake for gym-rs";
 
   inputs = {
     nixpks.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -20,11 +20,10 @@
           inherit system overlays;
         };
         rust = (
-          pkgs.rust-bin.stable.latest.default.override {
+          pkgs.rust-bin.stable."1.82.0".default.override {
             extensions = [
               "rust-src"
               "rust-analyzer"
-              "clippy"
             ];
             targets = ["x86_64-unknown-linux-gnu"];
           }
@@ -33,15 +32,18 @@
         with pkgs; {
           devShells.default = mkShell {
             buildInputs = [
-              openssl
-              protobuf
-              clang
-              pkg-config
-              fontconfig
-              cmake
-              (lib.hiPrio rust-bin.nightly."2024-04-01".rustfmt)
+              # System dependencies
+              cmake     # Required by `SDL2`
+              SDL2_gfx  # Used in tests
+
+              # Rust toolchain
+              # Nightly rustfmt because some rules are not supported in stable.
+              (lib.hiPrio rust-bin.nightly."2024-09-01".rustfmt)
               rust
-              SDL2_gfx # Used in tests
+
+              # Tooling
+              taplo     # Formats `Cargo.toml`
+              alejandra # Formats nix files.
             ];
           };
         }
