@@ -1,0 +1,17 @@
+procs:
+  cargo-check:
+    shell: "cargo check"
+  cargo-test:
+    shell: "cargo test"
+  cargo-bench:
+    shell: "cargo bench"
+  cargo-fmt:
+    shell: "cargo fmt"
+  cargo-clippy:
+    shell: "cargo clippy"
+  cargo-doc:
+    shell: "cargo doc"
+  taplo:
+    shell: "taplo fmt"
+  semver-checks:
+    shell: "cargo semver-checks"
