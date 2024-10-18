@@ -37,20 +37,19 @@ impl Renderer {
     }
 
     /// Renders a frame using the given render closure if structure conditions are met.
-    pub fn render_step<'b>(&mut self, render: RenderFn<'b>) {
+    pub fn render_step(&mut self, render: RenderFn) {
         if self.mode != RenderMode::None && !self.single_render.contains(&self.mode) {
             let render_return = render(self.mode);
             if !self.no_returns_render.contains(&self.mode) {
-                match render_return {
-                    Renders::SingleRgbArray(frame) => self.render_list.push(frame),
-                    _ => (),
+                if let Renders::SingleRgbArray(frame) = render_return {
+                    self.render_list.push(frame)
                 }
             }
         }
     }
 
     /// Supplies the list of frames collected thus far.
-    pub fn get_renders<'b>(&mut self, render: RenderFn<'b>) -> Renders {
+    pub fn get_renders(&mut self, render: RenderFn) -> Renders {
         if self.single_render.contains(&self.mode) {
             render(self.mode)
         } else if self.mode != RenderMode::None && !self.no_returns_render.contains(&self.mode) {

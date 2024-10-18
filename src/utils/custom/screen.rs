@@ -66,18 +66,18 @@ pub struct Screen {
 impl Clone for Screen {
     fn clone(&self) -> Self {
         Self {
-            height: self.height.clone(),
-            width: self.width.clone(),
+            height: self.height,
+            width: self.width,
             title: self.title,
-            render_fps: self.render_fps.clone(),
-            mode: self.mode.clone(),
+            render_fps: self.render_fps,
+            mode: self.mode,
             gui: None,
         }
     }
 }
 impl Screen {
     /// Closes the process responsible for rendering the environment.
-    pub fn close(&mut self) -> () {
+    pub fn close(&mut self) {
         self.gui.take();
     }
 
@@ -133,50 +133,41 @@ impl Screen {
     /// Draws new content on the canvas using the closure and transformation instructions provided.
     pub fn draw_on_canvas(
         &mut self,
-        using_fn: impl FnMut(&mut WindowCanvas) -> (),
+        using_fn: impl FnMut(&mut WindowCanvas),
         with_transformations: ScreenGuiTransformations,
     ) {
-        match self.gui.as_mut() {
-            Some(ScreenGui { canvas, .. }) => {
-                let texture_creator = canvas.texture_creator();
-                let mut texture = texture_creator
-                    .create_texture_target(PixelFormatEnum::RGB24, self.width, self.height)
-                    .expect("Create texture.");
+        if let Some(ScreenGui { canvas, .. }) = self.gui.as_mut() {
+            let texture_creator = canvas.texture_creator();
+            let mut texture = texture_creator
+                .create_texture_target(PixelFormatEnum::RGB24, self.width, self.height)
+                .expect("Create texture.");
 
-                canvas
-                    .with_texture_canvas(&mut texture, using_fn)
-                    .expect("Was unable to render.");
+            canvas
+                .with_texture_canvas(&mut texture, using_fn)
+                .expect("Was unable to render.");
 
-                canvas
-                    .copy_ex(
-                        &mut texture,
-                        with_transformations.src,
-                        with_transformations.dst,
-                        with_transformations.angle,
-                        with_transformations.center,
-                        with_transformations.flip_horizontal,
-                        with_transformations.flip_vertical,
-                    )
-                    .expect("Transformations failed to be applied.");
-            }
-            _ => (),
+            canvas
+                .copy_ex(
+                    &texture,
+                    with_transformations.src,
+                    with_transformations.dst,
+                    with_transformations.angle,
+                    with_transformations.center,
+                    with_transformations.flip_horizontal,
+                    with_transformations.flip_vertical,
+                )
+                .expect("Transformations failed to be applied.");
         }
     }
 
     /// Processes all events found in the queue.
     pub fn consume_events(&mut self) {
-        match self.gui.as_mut() {
-            Some(ScreenGui { event_pump, .. }) => {
-                for event in event_pump.poll_iter() {
-                    match event {
-                        Event::Quit { .. } => {
-                            panic!("Animation was forced to exit.")
-                        }
-                        _ => (),
-                    }
+        if let Some(ScreenGui { event_pump, .. }) = self.gui.as_mut() {
+            for event in event_pump.poll_iter() {
+                if let Event::Quit { .. } = event {
+                    panic!("Animation was forced to exit.")
                 }
             }
-            _ => (),
         }
     }
 
@@ -192,7 +183,7 @@ impl Screen {
             let gui = {
                 let context = sdl2::init().unwrap();
                 let video_subsystem = context.video().unwrap();
-                let mut window_builder = video_subsystem.window(&title, width, height);
+                let mut window_builder = video_subsystem.window(title, width, height);
 
                 window_builder.position_centered();
 

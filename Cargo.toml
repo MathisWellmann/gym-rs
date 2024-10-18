@@ -11,6 +11,15 @@ keywords = ["ai", "ml", "physical", "environment", "benchmark"]
 categories = ["simulation", "science", "algorithms"]
 exclude = ["img/"]
 
+[lints.rust]
+unused_imports = "warn"
+unused_crate_dependencies = "warn"
+missing_docs = "warn"
+dead_code = "deny"
+
+[lints.clippy]
+all = "warn"
+
 [dependencies]
 rand = "0.8"
 rand_pcg = "0.3"

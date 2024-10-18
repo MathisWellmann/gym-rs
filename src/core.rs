@@ -13,13 +13,13 @@ use crate::{
 };
 
 /// Defines the range of values that can be outputted by a given environment.
-const DEFAULT_REWARD_RANGE: &'static RewardRange = &(RewardRange {
+const DEFAULT_REWARD_RANGE: &RewardRange = &(RewardRange {
     lower_bound: OrderedFloat(f64::NEG_INFINITY),
     upper_bound: OrderedFloat(f64::INFINITY),
 });
 
 /// Defines the render mode set by a default environment instances.
-const DEFAULT_RENDER_MODE: &'static RenderMode = &RenderMode::None;
+const DEFAULT_RENDER_MODE: &RenderMode = &RenderMode::None;
 
 /// Defines a common set of operations available to different environments.
 pub trait Env: Clone + Debug + Serialize + EnvProperties

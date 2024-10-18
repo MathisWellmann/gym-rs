@@ -19,10 +19,10 @@ use rand_pcg::Pcg64;
 /// assert_eq!(seed_no, 64);
 /// ```
 pub fn rand_random(seed: Option<u64>) -> (Pcg64, u64) {
-    let seed_no = seed.unwrap_or((&mut thread_rng()).gen());
+    let seed_no = seed.unwrap_or(thread_rng().gen());
     let generator = Pcg64::seed_from_u64(seed_no);
 
-    return (generator, seed_no);
+    (generator, seed_no)
 }
 
 #[cfg(test)]

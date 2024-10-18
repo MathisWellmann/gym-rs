@@ -86,26 +86,26 @@ pub struct MountainCarEnv {
 impl Clone for MountainCarEnv {
     fn clone(&self) -> Self {
         Self {
-            min_position: self.min_position.clone(),
-            max_position: self.max_position.clone(),
-            max_speed: self.max_speed.clone(),
-            goal_position: self.goal_position.clone(),
-            goal_velocity: self.goal_velocity.clone(),
-            force: self.force.clone(),
-            gravity: self.gravity.clone(),
-            render_mode: self.render_mode.clone(),
+            min_position: self.min_position,
+            max_position: self.max_position,
+            max_speed: self.max_speed,
+            goal_position: self.goal_position,
+            goal_velocity: self.goal_velocity,
+            force: self.force,
+            gravity: self.gravity,
+            render_mode: self.render_mode,
             renderer: self.renderer.clone(),
             screen: self.screen.clone(),
             action_space: self.action_space.clone(),
             observation_space: self.observation_space.clone(),
-            state: self.state.clone(),
+            state: self.state,
             rand_random: self.rand_random.clone(),
             metadata: self.metadata.clone(),
         }
     }
 }
 
-const MOUNTAIN_CAR_RENDER_MODES: &'static [RenderMode] = &[
+const MOUNTAIN_CAR_RENDER_MODES: &[RenderMode] = &[
     RenderMode::Human,
     RenderMode::RgbArray,
     RenderMode::SingleRgbArray,
@@ -197,11 +197,11 @@ impl From<MountainCarObservation> for Vec<f64> {
 }
 
 impl MountainCarEnv {
-    fn height(xs: &Vec<O64>) -> Vec<O64> {
-        xs.clone()
-            .iter()
-            .map(|value| OrderedFloat((3. * value.into_inner()).sin() * 0.45 + 0.55))
-            .collect()
+    fn height(xs: &[O64]) -> Vec<O64> {
+        Vec::from_iter(
+            xs.iter()
+                .map(|value| OrderedFloat((3. * value.into_inner()).sin() * 0.45 + 0.55)),
+        )
     }
 
     fn render(
@@ -230,11 +230,11 @@ impl MountainCarEnv {
 
                 let pos = state.position;
 
-                let xs: Vec<_> = (0..100)
-                    .into_iter()
-                    .map(|index| (((max_position - min_position) / 100.) * index as f64))
-                    .map(|value| value + min_position)
-                    .collect();
+                let xs = Vec::from_iter(
+                    (0..100)
+                        .map(|index| (((max_position - min_position) / 100.) * index as f64))
+                        .map(|value| value + min_position),
+                );
 
                 let ys: Vec<_> = Self::height(&xs);
                 let xys: Vec<Point> = zip(
@@ -261,9 +261,8 @@ impl MountainCarEnv {
                     let (x, y) = (rotated_point.x, rotated_point.y);
 
                     let new_x = OrderedFloat(x) + (pos - min_position) * scale;
-                    let new_y = OrderedFloat(y)
-                        + clearance
-                        + Self::height(&vec![pos]).pop().unwrap() * scale;
+                    let new_y =
+                        OrderedFloat(y) + clearance + Self::height(&[pos]).pop().unwrap() * scale;
 
                     (new_x, new_y)
                 });
@@ -280,7 +279,7 @@ impl MountainCarEnv {
                     .unwrap();
 
                 for (x, y) in [(carwidth as f64 / 4., 0.), ((-carwidth as f64 / 4.), 0.)] {
-                    let point = Point2::new(x as f64, y as f64);
+                    let point = Point2::new(x, y);
                     let desired_angle = ((OrderedFloat(3.) * pos).cos()).into_inner();
                     let rotation_matrix = Rotation2::new(desired_angle);
                     let rotated_point = rotation_matrix.transform_point(&point);
@@ -289,7 +288,7 @@ impl MountainCarEnv {
 
                     let (wheel_x, wheel_y) = (
                         (x + (pos - min_position) * scale).floor().into_inner() as i16,
-                        (y + clearance + Self::height(&vec![pos]).pop().unwrap() * scale)
+                        (y + clearance + Self::height(&[pos]).pop().unwrap() * scale)
                             .floor()
                             .into_inner() as i16,
                     );
@@ -308,7 +307,7 @@ impl MountainCarEnv {
                 let flagx = ((goal_position - min_position) * scale)
                     .floor()
                     .into_inner() as i16;
-                let flagy1 = (Self::height(&vec![goal_position]).pop().unwrap() * scale)
+                let flagy1 = (Self::height(&[goal_position]).pop().unwrap() * scale)
                     .floor()
                     .into_inner() as i16;
                 let flagy2 = flagy1 + 50;
@@ -318,15 +317,15 @@ impl MountainCarEnv {
 
                 internal_canvas
                     .aa_polygon(
-                        &vec![flagx, flagx, flagx + 25],
-                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
+                        &[flagx, flagx, flagx + 25],
+                        &[flagy2, flagy2 - 10, flagy2 - 5],
                         Color::RGB(204, 204, 0),
                     )
                     .unwrap();
                 internal_canvas
                     .filled_polygon(
-                        &vec![flagx, flagx, flagx + 25],
-                        &vec![flagy2, flagy2 - 10, flagy2 - 5],
+                        &[flagx, flagx, flagx + 25],
+                        &[flagy2, flagy2 - 10, flagy2 - 5],
                         Color::RGB(204, 204, 0),
                     )
                     .unwrap();

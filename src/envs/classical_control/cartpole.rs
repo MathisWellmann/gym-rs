@@ -262,7 +262,7 @@ impl CartPoleEnv {
     }
 }
 
-const CART_POLE_RENDER_MODES: &'static [RenderMode] = &[RenderMode::Human, RenderMode::RgbArray];
+const CART_POLE_RENDER_MODES: &[RenderMode] = &[RenderMode::Human, RenderMode::RgbArray];
 
 impl Default for Metadata<CartPoleEnv> {
     fn default() -> Self {
@@ -335,15 +335,16 @@ pub struct CartPoleObservation {
 
 impl From<CartPoleObservation> for Vec<f64> {
     fn from(observation: CartPoleObservation) -> Self {
-        (vec![
-            observation.x,
-            observation.x_dot,
-            observation.theta,
-            observation.theta_dot,
-        ])
-        .iter()
-        .map(|v| v.into_inner())
-        .collect()
+        Vec::from_iter(
+            [
+                observation.x,
+                observation.x_dot,
+                observation.theta,
+                observation.theta_dot,
+            ]
+            .iter()
+            .map(|v| v.into_inner()),
+        )
     }
 }
 
@@ -428,15 +429,15 @@ impl Env for CartPoleEnv {
         let xacc = temp - self.polemass_length() * thetaacc * costheta / self.total_mass();
 
         if self.kinematics_integrator == KinematicsIntegrator::Euler {
-            x = x + self.tau * x_dot;
-            x_dot = x_dot + self.tau * xacc;
-            theta = theta + self.tau * theta_dot;
-            theta_dot = theta_dot + self.tau * thetaacc;
+            x += self.tau * x_dot;
+            x_dot += self.tau * xacc;
+            theta += self.tau * theta_dot;
+            theta_dot += self.tau * thetaacc;
         } else {
-            x_dot = x_dot + self.tau * xacc;
-            x = x + self.tau * x_dot;
-            theta_dot = theta_dot + self.tau * thetaacc;
-            theta = theta + self.tau * theta_dot;
+            x_dot += self.tau * xacc;
+            x += self.tau * x_dot;
+            theta_dot += self.tau * thetaacc;
+            theta += self.tau * theta_dot;
         }
 
         self.state = CartPoleObservation {
