@@ -15,3 +15,7 @@ procs:
     shell: "taplo fmt"
   semver-checks:
     shell: "cargo semver-checks"
+  cartpole:
+    shell: "cargo run --example cartpole"
+  mountain_car:
+    shell: "cargo run --example mountain_car"
