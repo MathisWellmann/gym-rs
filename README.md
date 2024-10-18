@@ -17,7 +17,8 @@ dependency if any form of rendering is to be done.
 
 On Ubuntu you can install the dependency as such:
 ```shell
-sudo apt-get install libsdl2-dev
+sudo apt install libsdl2-dev
+sudo apt install libsdl2-gfx-dev
 ```
 
 On Arch:
