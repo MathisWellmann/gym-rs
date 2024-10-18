@@ -1,5 +1,6 @@
 /target
 /.idea
+/.direnv
 Cargo.lock
 .nvimlog
 .vscode
