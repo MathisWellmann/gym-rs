@@ -7,7 +7,6 @@ check out a [OpenAI Gym wrapper](https://github.com/MrRobb/gym-rs).
 
 
 ## Prerequisites
-
 This library use's SDL2 to enable various forms of rendering. Even when an SDL2
 window is not explictly shown, renders can be saved to files making it a mandatory 
 dependency if any form of rendering is to be done.
@@ -28,11 +27,10 @@ sudo pacman -S sdl2 sdl2_gfx
 
 If your using nix, you can get into the reproducible build environment as simple as:
 ```shell
-nix-shell
+nix develop
 ```
 
 ## Usage
-
 To use this crate in your project, put this in your Cargo.toml:
 
 ```toml
